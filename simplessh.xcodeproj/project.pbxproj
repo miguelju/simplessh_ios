@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D7193E2D2F7098EA000BE780 /* TerminalKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7193E2C2F7098EA000BE780 /* TerminalKeyboardView.swift */; };
+		D7BD320D2F6F47CE00E6C142 /* Citadel in Frameworks */ = {isa = PBXBuildFile; productRef = B1B2B3B4B5B6B7B8B9BBBB01 /* Citadel */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		D7450C462F6B6FFB0091A867 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		D7193E2C2F7098EA000BE780 /* TerminalKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalKeyboardView.swift; sourceTree = "<group>"; };
 		D7450C362F6B6FF90091A867 /* simplessh.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simplessh.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7450C452F6B6FFB0091A867 /* simplesshTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = simplesshTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7450C4F2F6B6FFB0091A867 /* simplesshUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = simplesshUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D7BD320D2F6F47CE00E6C142 /* Citadel in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -79,6 +86,7 @@
 				D7450C482F6B6FFB0091A867 /* simplesshTests */,
 				D7450C522F6B6FFB0091A867 /* simplesshUITests */,
 				D7450C372F6B6FF90091A867 /* Products */,
+				D7193E2C2F7098EA000BE780 /* TerminalKeyboardView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -112,6 +120,7 @@
 			);
 			name = simplessh;
 			packageProductDependencies = (
+				B1B2B3B4B5B6B7B8B9BBBB01 /* Citadel */,
 			);
 			productName = simplessh;
 			productReference = D7450C362F6B6FF90091A867 /* simplessh.app */;
@@ -134,8 +143,6 @@
 				D7450C482F6B6FFB0091A867 /* simplesshTests */,
 			);
 			name = simplesshTests;
-			packageProductDependencies = (
-			);
 			productName = simplesshTests;
 			productReference = D7450C452F6B6FFB0091A867 /* simplesshTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -157,8 +164,6 @@
 				D7450C522F6B6FFB0091A867 /* simplesshUITests */,
 			);
 			name = simplesshUITests;
-			packageProductDependencies = (
-			);
 			productName = simplesshUITests;
 			productReference = D7450C4F2F6B6FFB0091A867 /* simplesshUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -195,6 +200,9 @@
 			);
 			mainGroup = D7450C2D2F6B6FF90091A867;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A1A2A3A4A5A6A7A8A9AAAA01 /* XCRemoteSwiftPackageReference "Citadel" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D7450C372F6B6FF90091A867 /* Products */;
 			projectDirPath = "";
@@ -236,6 +244,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D7193E2D2F7098EA000BE780 /* TerminalKeyboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -390,6 +399,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = simplessh/simplessh.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = LZ887Z5LQ8;
@@ -398,6 +408,9 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBonjourServices = _ssh._tcp.;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Authenticate to access SSH keys";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connect to SSH servers on your local network";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -434,6 +447,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = simplessh/simplessh.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = LZ887Z5LQ8;
@@ -442,6 +456,9 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSBonjourServices = _ssh._tcp.;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Authenticate to access SSH keys";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connect to SSH servers on your local network";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -615,6 +632,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A1A2A3A4A5A6A7A8A9AAAA01 /* XCRemoteSwiftPackageReference "Citadel" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/orlandos-nl/Citadel.git";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.9.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B1B2B3B4B5B6B7B8B9BBBB01 /* Citadel */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1A2A3A4A5A6A7A8A9AAAA01 /* XCRemoteSwiftPackageReference "Citadel" */;
+			productName = Citadel;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D7450C2E2F6B6FF90091A867 /* Project object */;
 }

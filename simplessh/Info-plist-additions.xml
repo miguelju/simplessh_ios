@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Info.plist Reference for SimpleSSH
+
+  These keys are already configured via INFOPLIST_KEY_ build settings
+  in the Xcode project (auto-generated Info.plist). This file is kept
+  as a reference only.
+
+  Current configuration (set in project.pbxproj):
+    INFOPLIST_KEY_NSFaceIDUsageDescription = "Authenticate to access SSH keys"
+    INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Connect to SSH servers on your local network"
+
+  Entitlements (simplessh/simplessh.entitlements):
+    com.apple.security.app-sandbox = YES
+    com.apple.security.network.client = YES  (required for outgoing SSH connections)
+-->
+<plist version="1.0">
+<dict>
+    <!-- Network Access Permission (already in build settings) -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Connect to SSH servers on your local network</string>
+
+    <!-- Face ID / Touch ID Usage (already in build settings) -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>Authenticate to access SSH keys</string>
+</dict>
+</plist>
+
+<!--
+  ADDITIONAL SETUP NOTES:
+
+  1. Entitlements:
+     - simplessh.entitlements is already configured with:
+       * com.apple.security.app-sandbox (App Sandbox)
+       * com.apple.security.network.client (outgoing connections)
+     - Referenced in project.pbxproj via CODE_SIGN_ENTITLEMENTS
+
+  2. SSH Library:
+     - Citadel is added via Swift Package Manager (not CocoaPods)
+     - No bridging header needed (pure Swift)
+     - Packages resolve automatically when opening the workspace
+
+  3. Code Signing:
+     - Ensure your app is properly code signed
+     - Keychain access requires proper entitlements
+     - Test on real devices, not just simulator
+-->
