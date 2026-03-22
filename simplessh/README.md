@@ -79,6 +79,71 @@ This application provides a beautiful and intuitive interface for managing SSH c
 - Supports modern key exchange algorithms (curve25519-sha256, etc.)
 - No Objective-C bridging required — fully native Swift
 
+## How SSH Key Authentication Works
+
+SSH (Secure Shell) supports two primary authentication methods: **password** and **public key**. This app exclusively uses **public key authentication**, which is the recommended and more secure approach.
+
+### Why Keys Instead of Passwords?
+
+Password authentication is vulnerable to brute-force attacks, credential stuffing, and phishing. Most security-conscious server administrators disable password authentication entirely. The [OpenSSH project](https://www.openssh.com/) and major hosting providers (AWS, GitHub, DigitalOcean) all recommend or require key-based authentication.
+
+> **This app does not support password authentication by design.** You must use an SSH key pair to connect.
+
+### How Public Key Authentication Works
+
+1. **Key pair generation**: You generate a key pair on your local machine — a **private key** (secret, never shared) and a **public key** (placed on the server).
+2. **Server configuration**: The public key is added to `~/.ssh/authorized_keys` on the remote server.
+3. **Authentication handshake**: When connecting, the client proves it holds the private key by signing a challenge from the server. The server verifies the signature using the stored public key. The private key never leaves the client device.
+
+This is based on asymmetric cryptography (also called public-key cryptography). For a detailed explanation, see:
+- [OpenSSH Manual — ssh-keygen](https://man.openbsd.org/ssh-keygen.1) — official documentation for generating key pairs
+- [SSH Protocol Architecture — RFC 4251](https://datatracker.ietf.org/doc/html/rfc4251) — the SSH protocol specification
+- [Public Key Authentication — RFC 4252 Section 7](https://datatracker.ietf.org/doc/html/rfc4252#section-7) — the authentication protocol specification
+
+### Generating an SSH Key Pair
+
+```bash
+# Ed25519 (recommended — fast, secure, compact)
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# RSA (widely compatible — use 4096 bits minimum)
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+```
+
+This creates two files (default locations):
+- `~/.ssh/id_ed25519` (private key) — paste this into the app
+- `~/.ssh/id_ed25519.pub` (public key) — add this to the server
+
+### Installing the Public Key on the Server
+
+```bash
+# Copy public key to the remote server
+ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server_ip
+
+# Or manually append to authorized_keys
+cat ~/.ssh/id_ed25519.pub | ssh user@server_ip "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+
+### Tested Key Formats
+
+This app was tested with the following SSH key types and formats:
+
+| Format | Header | Algorithm | Status |
+|---|---|---|---|
+| OpenSSH Ed25519 | `-----BEGIN OPENSSH PRIVATE KEY-----` | ssh-ed25519 | Tested |
+| OpenSSH RSA | `-----BEGIN OPENSSH PRIVATE KEY-----` | ssh-rsa | Tested |
+| PEM RSA (PKCS#1) | `-----BEGIN RSA PRIVATE KEY-----` | RSA | Tested |
+
+The key format is auto-detected from the file content. **Encrypted (passphrase-protected) keys are not supported** — the private key must have no passphrase.
+
+### References
+
+- [OpenSSH](https://www.openssh.com/) — the most widely used SSH implementation
+- [SSH Protocol Architecture — RFC 4251](https://datatracker.ietf.org/doc/html/rfc4251)
+- [SSH Authentication Protocol — RFC 4252](https://datatracker.ietf.org/doc/html/rfc4252)
+- [GitHub: Connecting with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) — practical guide to SSH key setup
+- [DigitalOcean: How to Set Up SSH Keys](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-ubuntu-20-04) — step-by-step tutorial
+
 ## Important Notes
 
 ### Security
@@ -86,12 +151,6 @@ This application provides a beautiful and intuitive interface for managing SSH c
 - Biometric authentication (Face ID/Touch ID) with passcode fallback
 - Keys never stored in SwiftData or plaintext
 - Automatic Keychain cleanup on connection deletion
-
-### SSH Key Formats (auto-detected)
-- **OpenSSH Ed25519**: `-----BEGIN OPENSSH PRIVATE KEY-----` (ssh-ed25519) — custom OpenSSH parser extracts 32-byte seed
-- **OpenSSH RSA**: `-----BEGIN OPENSSH PRIVATE KEY-----` (ssh-rsa) — handled natively by Citadel
-- **PEM RSA (PKCS#1)**: `-----BEGIN RSA PRIVATE KEY-----` — custom ASN.1 DER parser
-- Encrypted keys (passphrase-protected) are not supported
 
 ### Network Permissions
 - `NSLocalNetworkUsageDescription` — required for local network SSH connections
@@ -113,8 +172,8 @@ This application provides a beautiful and intuitive interface for managing SSH c
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/simplessh.git
-cd simplessh
+git clone https://github.com/miguelju/simplessh_ios.git
+cd simplessh_ios
 
 # Open the project in Xcode
 open simplessh.xcodeproj
