@@ -1,10 +1,10 @@
-# Simple SSH - iOS SSH Connection Manager
+# Simple SSH - iOS SSH Terminal Client
 
-A modern iOS application for managing SSH connections using SwiftUI and Liquid Glass design principles.
+A modern iOS SSH client for connecting to remote servers and managing SSH connections, built with SwiftUI and Liquid Glass design principles.
 
 ## Overview
 
-This application provides a beautiful and intuitive interface for managing SSH connections on iPhone. It uses Apple's Liquid Glass design language and connects to real SSH servers using the Citadel SSH library.
+This application provides a full-featured SSH terminal on iPhone — connect to remote servers, execute commands in a live interactive shell, and manage multiple SSH connections. It uses Apple's Liquid Glass design language and the Citadel SSH library for secure, key-based authentication.
 
 ## Features
 

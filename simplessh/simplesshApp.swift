@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-/// Main app entry point for the SSH connection manager
+/// Main app entry point for the SSH terminal client
 /// This app demonstrates a simple SSH interface for iOS using SwiftUI and Liquid Glass design
 @main
 struct simplesshApp: App {
