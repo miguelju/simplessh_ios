@@ -41,19 +41,19 @@ This application provides a beautiful and intuitive interface for managing SSH c
 ## Screenshots
 
 ### Connection List (Empty State)
-![Connection List - Empty](screenshots/connection_list_empty.png)
+![Connection List - Empty](simplessh/screenshots/connection_list_empty.png)
 
 ### Connection List (With Connections)
-![Connection List - Populated](screenshots/connection_list_populated.png)
+![Connection List - Populated](simplessh/screenshots/connection_list_populated.png)
 
 ### Add Connection
-![Add Connection](screenshots/add_connection.png)
+![Add Connection](simplessh/screenshots/add_connection.png)
 
 ### SSH Terminal
-![SSH Terminal](screenshots/terminal_view.png)
+![SSH Terminal](simplessh/screenshots/terminal_view.png)
 
 ### Settings
-![Settings](screenshots/settings_view.png)
+![Settings](simplessh/screenshots/settings_view.png)
 
 ## Architecture
 
