@@ -1,4 +1,4 @@
-# SimpleSSH - File Structure
+# SimpleSSH for iPhone - File Structure
 
 ```
 simplessh/

@@ -1,10 +1,10 @@
-# Simple SSH - iOS SSH Terminal Client
+# Simple SSH - iPhone SSH Terminal Client
 
-A modern iOS SSH client for connecting to remote servers and managing SSH connections, built with SwiftUI and Liquid Glass design principles.
+A modern SSH client for iPhone, built with SwiftUI and Liquid Glass design principles. Connect to remote servers, manage SSH connections, and run commands in a full interactive terminal — all from your iPhone.
 
 ## Overview
 
-This application provides a full-featured SSH terminal on iPhone — connect to remote servers, execute commands in a live interactive shell, and manage multiple SSH connections. It uses Apple's Liquid Glass design language and the Citadel SSH library for secure, key-based authentication.
+Simple SSH is an iPhone app that provides a full-featured SSH terminal — connect to remote servers, execute commands in a live interactive shell, and manage multiple SSH connections. Designed exclusively for iPhone, it uses Apple's Liquid Glass design language and the Citadel SSH library for secure, key-based authentication.
 
 ## Features
 

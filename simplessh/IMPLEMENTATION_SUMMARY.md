@@ -2,7 +2,7 @@
 
 ## What Was Implemented
 
-A **production-ready SSH client** with the following features:
+A **production-ready SSH client for iPhone** with the following features:
 
 ### 1. Real SSH Library Integration - Citadel
 

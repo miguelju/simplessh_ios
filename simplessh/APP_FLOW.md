@@ -1,4 +1,4 @@
-# SimpleSSH Application Flow
+# SimpleSSH for iPhone — Application Flow
 
 ## App Startup
 

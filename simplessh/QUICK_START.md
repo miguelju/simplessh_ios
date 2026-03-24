@@ -1,4 +1,4 @@
-# Quick Start Guide - SimpleSSH
+# Quick Start Guide - SimpleSSH for iPhone
 
 ## 5-Minute Setup
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide covers the SimpleSSH app architecture and setup for production use with:
+This guide covers the SimpleSSH iPhone app architecture and setup for production use with:
 
 1. Real SSH connections via Citadel (SwiftNIO SSH)
 2. Secure Keychain storage for SSH keys
