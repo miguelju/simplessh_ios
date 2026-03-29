@@ -20,8 +20,24 @@ struct SettingsView: View {
                     terminalPreview
                 }
 
+                // App appearance mode (System / Light / Dark)
+                Section("Appearance") {
+                    Picker("Mode", selection: $settings.appearanceName) {
+                        ForEach(AppAppearance.allCases) { mode in
+                            HStack(spacing: 10) {
+                                Image(systemName: appearanceIcon(mode))
+                                    .frame(width: 24)
+                                Text(mode.rawValue)
+                            }
+                            .tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                }
+
                 // Unified theme picker
-                Section("Theme") {
+                Section("Terminal Theme") {
                     Picker("Theme", selection: $settings.themeName) {
                         ForEach(TerminalTheme.allCases) { theme in
                             HStack(spacing: 10) {
@@ -99,6 +115,17 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Appearance Helpers
+
+    /// Returns the SF Symbol icon for each appearance mode
+    private func appearanceIcon(_ mode: AppAppearance) -> String {
+        switch mode {
+        case .system: return "circle.lefthalf.filled"
+        case .light:  return "sun.max.fill"
+        case .dark:   return "moon.fill"
         }
     }
 
@@ -182,6 +209,7 @@ struct SettingsView: View {
     // MARK: - Actions
 
     private func resetToDefaults() {
+        settings.appearanceName = AppAppearance.system.rawValue
         settings.themeName = TerminalTheme.classicGreen.rawValue
         settings.customFontName = TerminalFont.system.rawValue
         settings.customFontSize = 14

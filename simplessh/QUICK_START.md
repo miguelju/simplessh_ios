@@ -32,6 +32,13 @@ Xcode will automatically resolve the Citadel SPM package and its dependencies on
    - Authenticate with Face ID if required
    - Wait for SSH connection
    - Type commands in the terminal
+6. **Edit a connection (optional):**
+   - Tap ⋯ (three dots) in the toolbar → Edit
+   - Tap the connection you want to modify
+   - Update details (name, host, username, port, biometric setting)
+   - Optionally paste a new SSH key (leave empty to keep the existing one)
+   - Tap "Update Connection"
+   - Or: long-press any connection → Edit (shortcut without entering edit mode)
 
 ---
 
@@ -41,6 +48,7 @@ Xcode will automatically resolve the Citadel SPM package and its dependencies on
 - [ ] SPM packages resolved successfully
 - [ ] App runs on real device
 - [ ] Can add new connection
+- [ ] Can edit existing connection (⋯ → Edit, or long-press → Edit)
 - [ ] Face ID/Touch ID prompts appear
 - [ ] SSH key stored in Keychain
 - [ ] Can connect to SSH server
@@ -107,7 +115,7 @@ cat ~/.ssh/test_key
 | Data | SwiftData |
 | SSH | Citadel (SwiftNIO SSH) |
 | Terminal Rendering | ANSI parser (Oh My Zsh compatible) |
-| Appearance | Customizable font, size, colors (6 themes + custom) |
+| Appearance | Dark mode (System/Light/Dark) + customizable terminal themes (7 presets + custom) |
 | Settings Persistence | @AppStorage (UserDefaults) |
 | Key Storage | iOS Keychain |
 | Auth | Face ID / Touch ID |

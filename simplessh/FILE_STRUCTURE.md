@@ -5,7 +5,7 @@ simplessh/
 │
 ├── Core Application Files
 │   ├── simplesshApp.swift                    # App entry point, SwiftData setup
-│   └── ContentView.swift                     # Main connection list
+│   └── ContentView.swift                     # Main connection list with edit mode
 │
 ├── Security & Authentication
 │   ├── KeychainManager.swift                 # Keychain storage & biometrics
@@ -17,9 +17,9 @@ simplessh/
 │   └── ANSIParser.swift                      # ANSI escape code → AttributedString (colors, styles)
 │
 ├── UI Components
-│   ├── AddConnectionView.swift               # Connection form with Keychain integration
-│   ├── SettingsView.swift                    # Terminal appearance settings with live preview
-│   ├── TerminalSettings.swift                # Settings model (@AppStorage persistence)
+│   ├── AddConnectionView.swift               # Add/edit connection form with Keychain integration
+│   ├── SettingsView.swift                    # App appearance + terminal theme settings with live preview
+│   ├── TerminalSettings.swift                # AppAppearance enum + settings model (@AppStorage persistence)
 │   ├── TerminalKeyboardView.swift            # UIKeyInput keyboard capture for direct PTY input
 │   └── MigrationHelper.swift                 # Migration utilities & UI
 │
@@ -55,8 +55,8 @@ simplessh/
 
 ### Layer 1: UI (SwiftUI)
 ```
-ContentView.swift           → Connection list, navigation, settings access
-AddConnectionView.swift     → Form with biometric toggle, saves to Keychain
+ContentView.swift           → Connection list, navigation, edit mode, settings access
+AddConnectionView.swift     → Add/edit connection form with biometric toggle, saves to Keychain
 SSHTerminalView.swift   → Live terminal, PTY output, direct keystroke input, settings access
 SettingsView.swift          → Unified theme picker (font, size, colors) with live preview
 ```
@@ -66,7 +66,7 @@ SettingsView.swift          → Unified theme picker (font, size, colors) with l
 SSHManager.swift            → Citadel SSH client, PTY sessions, key parsing
 KeychainManager.swift       → Secure storage, biometric auth, access control
 ANSIParser.swift            → ANSI escape codes → styled AttributedString
-TerminalSettingsStore       → Font, size, color preferences (@AppStorage)
+TerminalSettingsStore       → App appearance mode, font, size, color preferences (@AppStorage)
 ```
 
 ### Layer 3: Data Models

@@ -16,6 +16,8 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 
 ### SSH Connection Management
 - Save multiple SSH server configurations
+- Edit existing connections: update name, host, username, port, biometric setting, or replace SSH key
+- Edit via toolbar ⋯ menu → Edit (tap to select) or long-press context menu → Edit
 - Secure key storage in iOS Keychain (not in SwiftData)
 - Biometric authentication (Face ID / Touch ID) for key access
 - Connection details: hostname, username, SSH key (Ed25519 or RSA, OpenSSH or PEM format), port
@@ -30,6 +32,12 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 - Special keys toolbar (ESC, TAB, CTRL, arrows) for software keyboard
 - Typing `exit` closes the SSH session and returns to the connection list
 - Connection status indicators
+
+### Dark Mode Support
+- Three appearance modes: System (follows device), Light, and Dark
+- Adaptive UI colors throughout the app — text, backgrounds, and glass effects adjust automatically
+- Configurable in Settings → Appearance
+- Terminal view maintains its own theme colors independent of app appearance
 
 ### Customizable Terminal Themes
 - 7 built-in themes, each bundling font, size, and colors: Classic Green, Amber, Cyan, White, Solarized, Dracula, Oh My Zsh
@@ -61,10 +69,10 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 - **SSHConnection**: SwiftData model storing connection configuration (metadata only — keys in Keychain)
 
 ### Views
-- **ContentView**: Main list showing all saved connections with swipe-to-delete
-- **AddConnectionView**: Form for creating new connections with validation and biometric toggle
+- **ContentView**: Main list showing all saved connections with edit mode, context menu, and swipe-to-delete
+- **AddConnectionView**: Form for creating new connections or editing existing ones, with validation and biometric toggle
 - **SSHTerminalView**: Production terminal with real SSH via Citadel
-- **SettingsView**: Terminal appearance customization with live preview
+- **SettingsView**: App appearance mode (System/Light/Dark) and terminal theme customization with live preview
 
 ### Managers
 - **SSHManager**: SSH connection lifecycle, PTY shell sessions, command execution — all async/await
@@ -72,7 +80,7 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 
 ### Utilities
 - **ANSIParser**: Converts ANSI escape codes to styled `AttributedString` for terminal rendering (colors, bold, italic, underline, 256-color, true color)
-- **TerminalSettingsStore**: Persists terminal appearance preferences (font, size, colors) via `@AppStorage`
+- **TerminalSettingsStore**: Persists app appearance mode and terminal preferences (font, size, colors) via `@AppStorage`
 
 ### SSH Library
 - **Citadel** (Swift Package Manager): Pure Swift SSH client built on SwiftNIO SSH

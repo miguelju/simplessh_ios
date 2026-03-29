@@ -17,6 +17,9 @@ struct ContentView: View {
     /// Query to fetch all saved SSH connections, sorted by last used date
     @Query(sort: \SSHConnection.createdAt, order: .reverse) private var connections: [SSHConnection]
     
+    /// Current color scheme for adaptive styling
+    @Environment(\.colorScheme) private var colorScheme
+
     /// Controls whether the "Add Connection" sheet is presented
     @State private var showingAddConnection = false
     
@@ -25,6 +28,9 @@ struct ContentView: View {
 
     /// Controls whether the settings sheet is presented
     @State private var showingSettings = false
+    
+    /// The connection currently being edited (nil when not editing)
+    @State private var connectionToEdit: SSHConnection?
     
     var body: some View {
         NavigationStack {
@@ -39,8 +45,13 @@ struct ContentView: View {
             .toolbar {
                 toolbarContent
             }
+            // Sheet for adding a new connection
             .sheet(isPresented: $showingAddConnection) {
                 AddConnectionView()
+            }
+            // Sheet for editing an existing connection (triggered by edit mode tap or context menu)
+            .sheet(item: $connectionToEdit) { connection in
+                AddConnectionView(connectionToEdit: connection)
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
@@ -50,17 +61,27 @@ struct ContentView: View {
     
     // MARK: - View Components
     
-    /// Background gradient with Liquid Glass aesthetic
+    /// Background that adapts to light/dark mode.
+    /// Light: clean light gray (Outlook-style). Dark: blue/purple gradient.
     private var backgroundGradient: some View {
-        LinearGradient(
-            colors: [
-                Color.blue.opacity(0.3),
-                Color.purple.opacity(0.2),
-                Color.blue.opacity(0.3)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        Group {
+            if colorScheme == .dark {
+                Color(.systemBackground)
+                    .overlay(
+                        LinearGradient(
+                            colors: [
+                                Color.blue.opacity(0.3),
+                                Color.purple.opacity(0.2),
+                                Color.blue.opacity(0.3)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            } else {
+                Color(.systemGroupedBackground)
+            }
+        }
         .ignoresSafeArea()
     }
     
@@ -77,18 +98,18 @@ struct ContentView: View {
     /// Empty state view shown when no connections exist
     private var emptyStateView: some View {
         VStack(spacing: 24) {
-            // Icon with glass effect
+            // Icon with glass effect — white on dark glass, accent blue on light glass
             Image(systemName: "server.rack")
                 .font(.system(size: 80))
-                .foregroundStyle(.white)
+                .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                 .frame(width: 160, height: 160)
-                .glassEffect(.regular.tint(.blue).interactive(), in: .circle)
+                .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.3)).interactive(), in: .circle)
             
             VStack(spacing: 12) {
                 Text("No SSH Connections")
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 
                 Text("Add your first connection to get started")
                     .font(.body)
@@ -100,10 +121,10 @@ struct ContentView: View {
             Button(action: { showingAddConnection = true }) {
                 Label("Add Connection", systemImage: "plus.circle.fill")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                     .padding(.horizontal, 32)
                     .padding(.vertical, 16)
-                    .glassEffect(.regular.tint(.blue).interactive(), in: .capsule)
+                    .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.3)).interactive(), in: .capsule)
             }
             .padding(.top)
         }
@@ -115,16 +136,29 @@ struct ContentView: View {
         ScrollView {
             LazyVStack(spacing: 16) {
                 ForEach(connections) { connection in
-                    ConnectionRowView(connection: connection)
-                        .environment(\.editMode, $editMode)
-                        .contextMenu {
-                            // Context menu for quick actions
-                            Button(role: .destructive) {
-                                deleteConnection(connection)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
+                    // Pass edit mode state and edit callback to each row.
+                    // In edit mode, tapping a row opens the edit sheet instead of the terminal.
+                    ConnectionRowView(
+                        connection: connection,
+                        isEditMode: editMode == .active,
+                        onEdit: {
+                            connectionToEdit = connection
                         }
+                    )
+                    .contextMenu {
+                        // Long-press context menu: edit or delete without entering edit mode
+                        Button {
+                            connectionToEdit = connection
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive) {
+                            deleteConnection(connection)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 }
             }
             .padding()
@@ -138,7 +172,6 @@ struct ContentView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: { showingAddConnection = true }) {
                     Label("Add Connection", systemImage: "plus")
-                        .foregroundStyle(.white)
                 }
             }
             
@@ -148,7 +181,6 @@ struct ContentView: View {
                     showingSettings = true
                 } label: {
                     Label("Settings", systemImage: "gearshape")
-                        .foregroundStyle(.white)
                 }
             }
 
@@ -160,7 +192,6 @@ struct ContentView: View {
                             editMode = editMode == .active ? .inactive : .active
                         }
                     }
-                    .foregroundStyle(.white)
                 }
             }
         }
@@ -183,78 +214,107 @@ struct ContentView: View {
 
 // MARK: - Connection Row View
 
-/// Individual row view for displaying an SSH connection with Liquid Glass
+/// Individual row view for displaying an SSH connection with Liquid Glass.
+/// Supports two modes:
+/// - **Normal mode**: Tapping navigates to the SSH terminal view
+/// - **Edit mode**: Tapping triggers the `onEdit` callback to open the edit sheet
 struct ConnectionRowView: View {
     /// The SSH connection to display
     let connection: SSHConnection
     
-    /// Edit mode from the environment
-    @Environment(\.editMode) private var editMode
+    /// Whether the list is in edit mode (toggled via the toolbar three-dots menu)
+    var isEditMode: Bool = false
     
+    /// Callback invoked when the user taps this row while in edit mode
+    var onEdit: (() -> Void)? = nil
+    
+    /// Current color scheme for adaptive styling
+    @Environment(\.colorScheme) private var colorScheme
+
     /// Access to model context for deletion
     @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        NavigationLink {
-            // Navigate to the terminal view
-            SSHTerminalView(connection: connection)
-        } label: {
-            HStack(spacing: 16) {
-                // Server icon with glass effect
-                ZStack {
-                    Image(systemName: "terminal.fill")
-                        .font(.title2)
-                        .foregroundStyle(.white)
-                        .frame(width: 60, height: 60)
-                        .glassEffect(.regular.tint(.blue).interactive(), in: .circle)
-                }
-                
-                // Connection details
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(connection.name)
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                    
-                    HStack(spacing: 12) {
-                        Label(connection.username, systemImage: "person.fill")
-                        Label(connection.serverIP, systemImage: "network")
+        if isEditMode {
+            // In edit mode, tapping opens the edit sheet
+            Button {
+                onEdit?()
+            } label: {
+                rowContent(showEditIcon: true)
+            }
+            .buttonStyle(.plain)
+        } else {
+            // In normal mode, tapping navigates to the terminal
+            NavigationLink {
+                SSHTerminalView(connection: connection)
+            } label: {
+                rowContent(showEditIcon: false)
+            }
+            .buttonStyle(.plain)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    withAnimation {
+                        connection.deleteSSHKey()
+                        modelContext.delete(connection)
                     }
-                    .font(.caption)
-                    .foregroundStyle(.white)
-                    
-                    if let lastUsed = connection.lastUsedAt {
-                        Text("Last used: \(lastUsed, format: .relative(presentation: .named))")
-                            .font(.caption2)
-                            .foregroundStyle(.white)
-                    }
+                } label: {
+                    Label("Delete", systemImage: "trash")
                 }
+            }
+        }
+    }
+    
+    /// Shared row content used in both normal and edit modes
+    private func rowContent(showEditIcon: Bool) -> some View {
+        HStack(spacing: 16) {
+            // Server icon with glass effect — white on dark glass, accent blue on light glass
+            Image(systemName: "terminal.fill")
+                .font(.title2)
+                .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
+                .frame(width: 60, height: 60)
+                .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.4)).interactive(), in: .circle)
+            
+            // Connection details
+            VStack(alignment: .leading, spacing: 6) {
+                Text(connection.name)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
                 
-                Spacer()
+                HStack(spacing: 12) {
+                    Label(connection.username, systemImage: "person.fill")
+                    Label(connection.serverIP, systemImage: "network")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 
-                // Chevron indicator
-                if editMode?.wrappedValue == .inactive {
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
+                if let lastUsed = connection.lastUsedAt {
+                    Text("Last used: \(lastUsed, format: .relative(presentation: .named))")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding()
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 100)
-            .glassEffect(.regular.tint(.purple).interactive(), in: .rect(cornerRadius: 20))
-        }
-        .buttonStyle(.plain)
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            // Swipe to delete action
-            Button(role: .destructive) {
-                withAnimation {
-                    connection.deleteSSHKey()
-                    modelContext.delete(connection)
-                }
-            } label: {
-                Label("Delete", systemImage: "trash")
+            
+            Spacer()
+            
+            // Show pencil icon in edit mode, chevron in normal mode
+            if showEditIcon {
+                Image(systemName: "pencil.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 100)
+        // Light: subtle neutral glass card. Dark: purple-tinted glass.
+        .glassEffect(
+            .regular.tint(colorScheme == .dark ? .purple : .blue.opacity(0.15)).interactive(),
+            in: .rect(cornerRadius: 20)
+        )
     }
 }
 

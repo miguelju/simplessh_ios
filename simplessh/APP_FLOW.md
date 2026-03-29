@@ -6,10 +6,13 @@
 iOS launches app
     └── @main simplesshApp (simplesshApp.swift)
             ├── Creates ModelContainer with SSHConnection schema (SwiftData)
+            ├── Observes TerminalSettingsStore.shared for appearance changes
             └── body: WindowGroup
                     └── ContentView()
-                            └── .modelContainer(sharedModelContainer)
-                                  (injects SwiftData context into environment)
+                            ├── .modelContainer(sharedModelContainer)
+                            │     (injects SwiftData context into environment)
+                            └── .preferredColorScheme(settings.appearance.colorScheme)
+                                  (applies System / Light / Dark mode)
 ```
 
 ---
@@ -22,37 +25,49 @@ ContentView
     ├── IF no connections → shows emptyStateView (icon + "Add Connection" button)
     └── IF connections exist → shows connectionsList
             └── ForEach connection:
-                    └── ConnectionRowView (NavigationLink)
+                    └── ConnectionRowView
                             ├── Displays: name, username, serverIP, lastUsedAt
-                            ├── Tap → navigates to SSHTerminalView(connection:)
+                            ├── Normal mode:
+                            │     ├── Tap → navigates to SSHTerminalView(connection:)
+                            │     └── Shows chevron icon
+                            ├── Edit mode (toggled via toolbar ⋯ menu → Edit):
+                            │     ├── Tap → opens AddConnectionView(connectionToEdit:) as sheet
+                            │     └── Shows pencil icon
                             ├── Swipe left → delete (removes Keychain key + SwiftData record)
-                            └── Long press → context menu with Delete option
+                            └── Long press → context menu with Edit and Delete options
 ```
 
 **User actions:**
-- **Tap "+"** → presents `AddConnectionView` as a sheet
-- **Tap a connection row** → navigates to `SSHTerminalView`
+- **Tap "+"** → presents `AddConnectionView` as a sheet (new connection)
+- **Tap a connection row** (normal mode) → navigates to `SSHTerminalView`
+- **Toolbar ⋯ → Edit** → enters edit mode; tap a connection to open its details for editing
+- **Toolbar ⋯ → Done** → exits edit mode
+- **Long-press a connection → Edit** → opens `AddConnectionView` pre-filled for editing (without entering edit mode)
 - **Swipe to delete** → calls `connection.deleteSSHKey()` then `modelContext.delete(connection)`
 
 ---
 
-## Screen 2: Add Connection (AddConnectionView.swift)
+## Screen 2: Add / Edit Connection (AddConnectionView.swift)
 
 ```
 AddConnectionView (presented as sheet)
+    ├── Mode: New (connectionToEdit == nil) or Edit (connectionToEdit != nil)
+    ├── Title: "New Connection" or "Edit Connection"
+    ├── On appear (edit mode): pre-fills fields from existing connection
     ├── Input fields:
     │     ├── Connection Name (TextField)
     │     ├── Server IP / Hostname (TextField)
     │     ├── Username (TextField)
     │     ├── Port (TextField, default "22")
     │     └── SSH Private Key (TextEditor, Ed25519 or RSA, OpenSSH or PEM format)
+    │           └── Edit mode: optional (leave empty to keep existing key)
     ├── Biometric toggle (Face ID / Touch ID)
-    └── Save button → saveConnection()
+    └── Save/Update button → saveConnection()
 ```
 
-**Save flow:**
+**Save flow (new connection):**
 ```
-saveConnection()
+saveConnection() — when connectionToEdit == nil
     ├── Validates all fields (non-empty, valid port 1-65535)
     ├── Creates SSHConnection(name, serverIP, username, port, requiresBiometric)
     ├── connection.storeSSHKey(sshKey)
@@ -61,6 +76,22 @@ saveConnection()
     │               ├── Deletes any existing key for this ID
     │               └── SecItemAdd() to iOS Keychain
     ├── modelContext.insert(connection)  — saves to SwiftData
+    └── dismiss()
+```
+
+**Update flow (edit connection):**
+```
+saveConnection() — when connectionToEdit != nil
+    ├── Validates name, server, username, port (non-empty, valid port 1-65535)
+    ├── SSH key is optional (leave empty to keep existing key)
+    ├── Updates existing connection properties in-place:
+    │     ├── connection.name = connectionName
+    │     ├── connection.serverIP = serverIP
+    │     ├── connection.username = username
+    │     ├── connection.port = portNumber
+    │     └── connection.requiresBiometric = requireBiometric
+    ├── IF sshKey is not empty:
+    │     └── connection.storeSSHKey(sshKey)  — replaces existing key in Keychain
     └── dismiss()
 ```
 
@@ -177,6 +208,13 @@ SSHConnection (@Model, SwiftData)
     ├── retrieveSSHKey() → KeychainManager (triggers biometric)
     ├── deleteSSHKey()   → KeychainManager
     └── hasSSHKey()      → KeychainManager (no biometric prompt)
+
+TerminalSettingsStore (@MainActor, singleton, @AppStorage)
+    ├── appearance: AppAppearance  → System / Light / Dark (→ preferredColorScheme)
+    ├── theme: TerminalTheme       → 7 presets + Custom
+    ├── terminalFont, fontSize     → active font from theme or custom override
+    ├── foregroundColor, backgroundColor → active colors from theme or custom override
+    └── font, boldFont             → computed SwiftUI Font values
 
 KeychainManager (singleton)
     ├── storeSSHKey()              → SecItemAdd with biometric access control

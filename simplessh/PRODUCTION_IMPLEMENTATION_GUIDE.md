@@ -142,6 +142,48 @@ SecAccessControlCreateWithFlags(
 
 ## Advanced Features
 
+### Edit Existing Connections (Implemented)
+
+`AddConnectionView` supports both creating and editing connections via an optional `connectionToEdit` parameter:
+
+```swift
+// New connection (default)
+AddConnectionView()
+
+// Edit existing connection
+AddConnectionView(connectionToEdit: connection)
+```
+
+**Edit mode flow:**
+- `ContentView` toggles `editMode` via the toolbar ⋯ menu → Edit
+- In edit mode, `ConnectionRowView` renders as a `Button` (instead of `NavigationLink`) that sets `connectionToEdit`
+- `connectionToEdit` triggers a `sheet(item:)` presenting `AddConnectionView` in edit mode
+- Fields are pre-filled via `.onAppear`; SSH key is optional (leave empty to keep existing)
+- On save, existing connection properties are updated in-place (SwiftData auto-persists)
+
+**Alternative:** Long-press context menu → Edit also sets `connectionToEdit` without entering edit mode.
+
+### Dark Mode (Implemented)
+
+App-wide appearance is controlled by `AppAppearance` enum in `TerminalSettings.swift`:
+
+```swift
+enum AppAppearance: String, CaseIterable {
+    case system = "System"  // follows device setting
+    case light = "Light"
+    case dark = "Dark"
+
+    var colorScheme: ColorScheme? { ... }  // nil for system
+}
+```
+
+- Persisted via `@AppStorage("app_appearance")` in `TerminalSettingsStore`
+- Applied at the app root: `.preferredColorScheme(settings.appearance.colorScheme)`
+- **Adaptive backgrounds**: Light mode uses `Color(.systemGroupedBackground)` for a clean look; dark mode uses a blue/purple gradient overlay
+- **Adaptive glass tints**: Light mode uses subtle, low-opacity tints (0.15–0.4); dark mode uses full-opacity tints for vibrant effects
+- **Adaptive icon colors**: Icons use `Color.accentColor` in light mode, `Color.white` in dark mode for proper contrast against glass
+- Terminal view is intentionally independent — it uses its own theme colors
+
 ### Terminal Appearance Settings (Implemented)
 
 Terminal appearance is fully customizable via `SettingsView.swift` and `TerminalSettings.swift`:

@@ -28,7 +28,19 @@ try await client.withPTY(ptyRequest) { output, writer in
 try await sshManager.sendCommand("ls -la")
 ```
 
-### 2. iOS Keychain Storage
+### 2. Edit Existing Connections
+
+**Files:** `ContentView.swift`, `AddConnectionView.swift`
+
+- Edit connection details (name, host, username, port, biometric setting) after creation
+- Two ways to access edit functionality:
+  - **Edit mode**: Toolbar ⋯ menu → Edit, then tap a connection to open its details
+  - **Context menu**: Long-press any connection → Edit (no need to enter edit mode)
+- `AddConnectionView` serves dual purpose: creating new connections and editing existing ones
+- SSH key is optional when editing — leave empty to keep the existing key, or paste a new one to replace it
+- Visual feedback: pencil icon on rows in edit mode, chevron in normal mode
+
+### 3. iOS Keychain Storage
 
 **File:** `KeychainManager.swift`
 
@@ -38,7 +50,7 @@ try await sshManager.sendCommand("ls -la")
 - Biometric access control (Face ID / Touch ID)
 - Automatic cleanup on connection deletion
 
-### 3. Biometric Authentication
+### 4. Biometric Authentication
 
 **Files:** `KeychainManager.swift`, `AddConnectionView.swift`, `SSHTerminalView.swift`
 
@@ -47,7 +59,7 @@ try await sshManager.sendCommand("ls -la")
 - Per-connection toggle
 - Automatic prompt before SSH connection
 
-### 4. SSH Key Format Support (Auto-Detected)
+### 5. SSH Key Format Support (Auto-Detected)
 
 **File:** `SSHManager.swift`
 
@@ -57,7 +69,7 @@ try await sshManager.sendCommand("ls -la")
 - Key type is auto-detected from the binary content; the correct authentication method is selected automatically
 - Encrypted (passphrase-protected) keys are not supported
 
-### 5. Full Terminal Emulation with ANSI Color Support
+### 6. Full Terminal Emulation with ANSI Color Support
 
 **Files:** `SSHTerminalView.swift`, `SSHManager.swift`, `ANSIParser.swift`
 
@@ -74,7 +86,21 @@ try await sshManager.sendCommand("ls -la")
 - Auto-scrolling terminal output
 - Connection status indicators
 
-### 6. Customizable Terminal Themes
+### 7. Dark Mode Support
+
+**Files:** `TerminalSettings.swift`, `SettingsView.swift`, `simplesshApp.swift`, `ContentView.swift`, `AddConnectionView.swift`
+
+- Three appearance modes: **System** (follows device setting), **Light**, and **Dark**
+- `AppAppearance` enum with `.colorScheme` computed property maps to SwiftUI's `ColorScheme?`
+- Setting persisted via `@AppStorage("app_appearance")` in `TerminalSettingsStore`
+- Applied at the app root via `.preferredColorScheme()` in `simplesshApp`
+- All UI views use adaptive colors (`.primary`, `.secondary`) instead of hardcoded `.white`
+- **Adaptive backgrounds**: Light mode uses clean `Color(.systemGroupedBackground)`; dark mode uses blue/purple gradient overlay on `Color(.systemBackground)`
+- **Adaptive glass tints**: Light mode uses subtle, low-opacity tints (0.15–0.4); dark mode uses full-opacity tints for vibrant glass effects
+- **Adaptive icon colors**: Icons use `Color.accentColor` in light mode and `Color.white` in dark mode for proper contrast against glass backgrounds
+- Terminal view is unaffected — it uses its own theme colors from `TerminalSettingsStore`
+
+### 8. Customizable Terminal Themes
 
 **Files:** `SettingsView.swift`, `TerminalSettings.swift`
 
@@ -93,7 +119,7 @@ try await sshManager.sendCommand("ls -la")
 
 ```
 UI Layer (SwiftUI)
-  ContentView → SSHTerminalView → AddConnectionView
+  ContentView → SSHTerminalView / AddConnectionView (add or edit)
        │                                    │
        ▼                                    ▼
   SSHManager                         KeychainManager

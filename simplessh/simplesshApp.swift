@@ -29,9 +29,14 @@ struct simplesshApp: App {
         }
     }()
 
+    /// Terminal settings store (observes appearance changes)
+    @ObservedObject private var settings = TerminalSettingsStore.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // Apply the user's chosen appearance (nil = follow system)
+                .preferredColorScheme(settings.appearance.colorScheme)
         }
         .modelContainer(sharedModelContainer)
     }

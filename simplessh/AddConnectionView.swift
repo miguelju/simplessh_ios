@@ -16,6 +16,15 @@ struct AddConnectionView: View {
     
     /// Environment variable to dismiss this view
     @Environment(\.dismiss) private var dismiss
+
+    /// Current color scheme for adaptive styling
+    @Environment(\.colorScheme) private var colorScheme
+    
+    /// Optional existing connection to edit (nil means creating a new connection)
+    var connectionToEdit: SSHConnection? = nil
+    
+    /// Whether we are in edit mode
+    private var isEditing: Bool { connectionToEdit != nil }
     
     /// Connection name entered by the user
     @State private var connectionName: String = ""
@@ -65,8 +74,20 @@ struct AddConnectionView: View {
                 .padding()
             }
             .background(gradientBackground)
-            .navigationTitle("New Connection")
+            .navigationTitle(isEditing ? "Edit Connection" : "New Connection")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                // When editing, pre-fill all fields with the existing connection's values.
+                // The SSH key field is left empty — the user only needs to provide a new key
+                // if they want to replace the existing one.
+                if let connection = connectionToEdit {
+                    connectionName = connection.name
+                    serverIP = connection.serverIP
+                    username = connection.username
+                    port = String(connection.port)
+                    requireBiometric = connection.requiresBiometric
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -89,11 +110,11 @@ struct AddConnectionView: View {
         VStack(spacing: 12) {
             Image(systemName: "terminal.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.white)
+                .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                 .frame(width: 120, height: 120)
-                .glassEffect(.regular.tint(.blue).interactive(), in: .circle)
+                .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.3)).interactive(), in: .circle)
             
-            Text("SSH Connection Setup")
+            Text(isEditing ? "Edit Connection Details" : "SSH Connection Setup")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
@@ -141,22 +162,22 @@ struct AddConnectionView: View {
         VStack(alignment: .leading, spacing: 12) {
             Label("SSH Private Key", systemImage: "key.fill")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             
             TextEditor(text: $sshKey)
                 .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 150)
                 .padding()
-                .background(Color.black.opacity(0.2))
-                .glassEffect(.regular.tint(.gray).interactive(), in: .rect(cornerRadius: 16))
+                .background(Color.primary.opacity(0.05))
+                .glassEffect(.regular.tint(.gray.opacity(colorScheme == .dark ? 1.0 : 0.2)).interactive(), in: .rect(cornerRadius: 16))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        .stroke(Color.primary.opacity(0.2), lineWidth: 1)
                 )
             
-            Text("Paste your SSH private key (PEM format)")
+            Text(isEditing ? "Leave empty to keep existing key" : "Paste your SSH private key (PEM format)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
@@ -168,11 +189,11 @@ struct AddConnectionView: View {
                         Text("Require \(biometricType)")
                     }
                     .font(.subheadline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                 }
                 .tint(.blue)
                 .padding()
-                .glassEffect(.regular.tint(.blue).interactive(), in: .rect(cornerRadius: 12))
+                .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.2)).interactive(), in: .rect(cornerRadius: 12))
             }
         }
     }
@@ -180,27 +201,37 @@ struct AddConnectionView: View {
     /// Save button with glass effect
     private var saveButton: some View {
         Button(action: saveConnection) {
-            Label("Save Connection", systemImage: "checkmark.circle.fill")
+            Label(isEditing ? "Update Connection" : "Save Connection", systemImage: "checkmark.circle.fill")
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(colorScheme == .dark ? Color.primary : Color.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
-                .glassEffect(.regular.tint(.green).interactive(), in: .capsule)
+                .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.8)).interactive(), in: .capsule)
         }
         .padding(.top)
     }
     
-    /// Gradient background
+    /// Background that adapts to light/dark mode.
+    /// Light: clean light gray (Outlook-style). Dark: blue/purple gradient.
     private var gradientBackground: some View {
-        LinearGradient(
-            colors: [
-                Color.blue.opacity(0.3),
-                Color.purple.opacity(0.3),
-                Color.blue.opacity(0.3)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        Group {
+            if colorScheme == .dark {
+                Color(.systemBackground)
+                    .overlay(
+                        LinearGradient(
+                            colors: [
+                                Color.blue.opacity(0.3),
+                                Color.purple.opacity(0.3),
+                                Color.blue.opacity(0.3)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            } else {
+                Color(.systemGroupedBackground)
+            }
+        }
         .ignoresSafeArea()
     }
     
@@ -224,9 +255,12 @@ struct AddConnectionView: View {
             return
         }
         
-        guard !sshKey.isEmpty else {
-            showError(message: "Please paste your SSH private key")
-            return
+        // SSH key is required for new connections, optional for edits
+        if !isEditing {
+            guard !sshKey.isEmpty else {
+                showError(message: "Please paste your SSH private key")
+                return
+            }
         }
         
         guard let portNumber = Int(port), portNumber > 0, portNumber <= 65535 else {
@@ -234,23 +268,40 @@ struct AddConnectionView: View {
             return
         }
         
-        // Create and save the connection
-        let connection = SSHConnection(
-            name: connectionName,
-            serverIP: serverIP,
-            username: username,
-            port: portNumber,
-            requiresBiometric: requireBiometric
-        )
-        
-        // Store SSH key in Keychain
-        guard connection.storeSSHKey(sshKey) else {
-            showError(message: "Failed to store SSH key securely. Please try again.")
-            return
+        if let connection = connectionToEdit {
+            // Update existing connection
+            connection.name = connectionName
+            connection.serverIP = serverIP
+            connection.username = username
+            connection.port = portNumber
+            connection.requiresBiometric = requireBiometric
+            
+            // Update SSH key in Keychain only if a new one was provided
+            if !sshKey.isEmpty {
+                guard connection.storeSSHKey(sshKey) else {
+                    showError(message: "Failed to store SSH key securely. Please try again.")
+                    return
+                }
+            }
+        } else {
+            // Create and save a new connection
+            let connection = SSHConnection(
+                name: connectionName,
+                serverIP: serverIP,
+                username: username,
+                port: portNumber,
+                requiresBiometric: requireBiometric
+            )
+            
+            // Store SSH key in Keychain
+            guard connection.storeSSHKey(sshKey) else {
+                showError(message: "Failed to store SSH key securely. Please try again.")
+                return
+            }
+            
+            // Save connection to SwiftData
+            modelContext.insert(connection)
         }
-        
-        // Save connection to SwiftData
-        modelContext.insert(connection)
         
         // Dismiss the view
         dismiss()
@@ -282,24 +333,28 @@ struct InputFieldView: View {
     
     /// Text autocapitalization style
     var autocapitalization: TextInputAutocapitalization = .sentences
+
+    /// Current color scheme for adaptive styling
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.8) : Color.accentColor.opacity(0.8))
                 .frame(width: 24)
             
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .keyboardType(keyboardType)
                 .textInputAutocapitalization(autocapitalization)
                 .autocorrectionDisabled()
         }
         .padding()
         .frame(height: 56)
-        .glassEffect(.regular.tint(.blue).interactive(), in: .rect(cornerRadius: 16))
+        // Light: subtle glass field. Dark: blue-tinted glass.
+        .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.15)).interactive(), in: .rect(cornerRadius: 16))
     }
 }
 

@@ -8,6 +8,25 @@
 import SwiftUI
 import Combine
 
+/// App-wide appearance mode (light, dark, or follow system)
+enum AppAppearance: String, CaseIterable, Identifiable {
+    case system = "System"
+    case light = "Light"
+    case dark = "Dark"
+
+    var id: String { rawValue }
+
+    /// Converts to an optional ColorScheme for `.preferredColorScheme()`
+    /// Returns nil for system (follows device setting)
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light:  return .light
+        case .dark:   return .dark
+        }
+    }
+}
+
 /// Available monospaced fonts for the terminal
 enum TerminalFont: String, CaseIterable, Identifiable {
     case system = "System Mono"
@@ -128,6 +147,15 @@ enum TerminalTheme: String, CaseIterable, Identifiable {
 @MainActor
 class TerminalSettingsStore: ObservableObject {
     static let shared = TerminalSettingsStore()
+
+    /// App appearance mode (system, light, or dark)
+    @AppStorage("app_appearance") var appearanceName: String = AppAppearance.system.rawValue
+
+    /// The currently selected appearance mode
+    var appearance: AppAppearance {
+        get { AppAppearance(rawValue: appearanceName) ?? .system }
+        set { appearanceName = newValue.rawValue }
+    }
 
     /// Selected theme (reuses same @AppStorage key for backward compatibility)
     @AppStorage("terminal_colorPreset") var themeName: String = TerminalTheme.classicGreen.rawValue
