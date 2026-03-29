@@ -16,6 +16,7 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 
 ### SSH Connection Management
 - Save multiple SSH server configurations
+- Edit existing connections (via toolbar edit mode or long-press context menu)
 - Secure key storage in iOS Keychain (not in SwiftData)
 - Biometric authentication (Face ID / Touch ID) for key access
 - Connection details: hostname, username, SSH key (Ed25519 or RSA, OpenSSH or PEM format), port
@@ -31,6 +32,13 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 - Typing `exit` closes the SSH session and returns to the connection list
 - Connection status indicators
 
+### Dark Mode Support
+- Three appearance modes: **System** (follows device setting), **Light**, and **Dark**
+- When set to **System**, the app automatically adapts to your device's appearance setting
+- Adaptive color palette: clean, subtle UI in light mode; vibrant gradient and glass effects in dark mode
+- Configurable in Settings — your preference is saved across app launches
+- Terminal view is independent — it always uses its own theme colors
+
 ### Customizable Terminal Themes
 - 7 built-in themes, each bundling font, size, and colors: Classic Green, Amber, Cyan, White, Solarized, Dracula, Oh My Zsh
 - Oh My Zsh theme optimized for rendering Oh My Zsh shell configurations
@@ -40,20 +48,21 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 
 ## Screenshots
 
-### Connection List (Empty State)
-![Connection List - Empty](simplessh/screenshots/connection_list_empty.png)
+### Light Mode
 
-### Connection List (With Connections)
-![Connection List - Populated](simplessh/screenshots/connection_list_populated.png)
+| Connection List (Empty) | Connection List | Add Connection |
+|:-:|:-:|:-:|
+| ![Empty](simplessh/screenshots/connection_list_empty.png) | ![Populated](simplessh/screenshots/connection_list_populated.png) | ![Add](simplessh/screenshots/add_connection.png) |
 
-### Add Connection
-![Add Connection](simplessh/screenshots/add_connection.png)
+| Settings | SSH Terminal |
+|:-:|:-:|
+| ![Settings](simplessh/screenshots/settings_view.png) | ![Terminal](simplessh/screenshots/terminal_view.png) |
 
-### SSH Terminal
-![SSH Terminal](simplessh/screenshots/terminal_view.png)
+### Dark Mode
 
-### Settings
-![Settings](simplessh/screenshots/settings_view.png)
+| Connection List | Settings |
+|:-:|:-:|
+| ![Connections Dark](simplessh/screenshots/connection_list_dark.png) | ![Settings Dark](simplessh/screenshots/settings_view_dark.png) |
 
 ## Architecture
 
@@ -61,10 +70,10 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 - **SSHConnection**: SwiftData model storing connection configuration (metadata only — keys in Keychain)
 
 ### Views
-- **ContentView**: Main list showing all saved connections with swipe-to-delete
-- **AddConnectionView**: Form for creating new connections with validation and biometric toggle
+- **ContentView**: Main list showing all saved connections with swipe-to-delete, edit mode, and context menus
+- **AddConnectionView**: Form for creating and editing connections with validation and biometric toggle
 - **SSHTerminalView**: Production terminal with real SSH via Citadel
-- **SettingsView**: Terminal appearance customization with live preview
+- **SettingsView**: Appearance mode (System/Light/Dark) and terminal theme customization with live preview
 
 ### Managers
 - **SSHManager**: SSH connection lifecycle, PTY shell sessions, command execution — all async/await
@@ -143,6 +152,19 @@ The key format is auto-detected from the file content. **Encrypted (passphrase-p
 - [SSH Authentication Protocol — RFC 4252](https://datatracker.ietf.org/doc/html/rfc4252)
 - [GitHub: Connecting with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) — practical guide to SSH key setup
 - [DigitalOcean: How to Set Up SSH Keys](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-ubuntu-20-04) — step-by-step tutorial
+
+## Documentation
+
+Detailed documentation is available inside the [`simplessh/`](simplessh/) directory:
+
+| Document | Description |
+|---|---|
+| [Quick Start Guide](simplessh/QUICK_START.md) | 5-minute setup guide — get the app running on your device step by step |
+| [App Flow](simplessh/APP_FLOW.md) | Application flow diagrams — how screens connect and data moves through the app |
+| [File Structure](simplessh/FILE_STRUCTURE.md) | Complete file listing with architecture layers and file descriptions |
+| [Implementation Summary](simplessh/IMPLEMENTATION_SUMMARY.md) | Feature summary, architecture overview, threading model, and dependencies |
+| [Production Implementation Guide](simplessh/PRODUCTION_IMPLEMENTATION_GUIDE.md) | Detailed technical guide — SSH key parsing, Keychain security, error handling, and troubleshooting |
+| [Project README](simplessh/README.md) | Inner project overview with feature list and requirements |
 
 ## Important Notes
 

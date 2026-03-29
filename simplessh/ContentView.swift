@@ -350,4 +350,30 @@ struct ConnectionRowView: View {
     return ContentView()
         .modelContainer(container)
 }
+#Preview("Dark Mode") {
+    let container = try! ModelContainer(
+        for: SSHConnection.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    
+    let connection1 = SSHConnection(
+        name: "Production Server",
+        serverIP: "192.168.1.100",
+        username: "admin"
+    )
+    connection1.lastUsedAt = Date().addingTimeInterval(-3600)
+    
+    let connection2 = SSHConnection(
+        name: "Development Server",
+        serverIP: "dev.example.com",
+        username: "developer"
+    )
+    
+    container.mainContext.insert(connection1)
+    container.mainContext.insert(connection2)
+    
+    return ContentView()
+        .modelContainer(container)
+        .preferredColorScheme(.dark)
+}
 
