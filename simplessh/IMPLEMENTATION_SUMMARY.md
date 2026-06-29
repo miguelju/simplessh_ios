@@ -71,18 +71,18 @@ try await sshManager.sendCommand("ls -la")
 
 ### 6. Full Terminal Emulation with ANSI Color Support
 
-**Files:** `SSHTerminalView.swift`, `SSHManager.swift`, `ANSIParser.swift`
+**Files:** `SSHTerminalView.swift`, `SSHManager.swift`, `TerminalEmulator.swift`, `FontRegistrar.swift`
 
 - Real-time output streaming via `AsyncSequence`
 - Direct keystroke input via `UIKeyInput` → `sendRawData` → `TTYStdinWriter` (each key sent immediately)
 - Special keys toolbar above software keyboard (ESC, TAB, CTRL, arrows, pipe, tilde)
 - PTY allocation with xterm-256color terminal type
-- **Full ANSI escape code rendering** via `ANSIParser`:
-  - 16 standard colors, 256-color palette, 24-bit true color (RGB)
-  - Bold, dim, italic, underline, reverse video, strikethrough
-  - Strips non-visual sequences (cursor movement, OSC/terminal title)
-  - Accepts configurable default foreground color and font from terminal settings
-- Oh My Zsh compatible — renders themed prompts, git branch indicators, Powerline symbols
+- **Stateful VT100/xterm emulation** via `TerminalEmulator`:
+  - Live screen grid + cursor, scroll regions, bounded scrollback, and an alternate-screen buffer (so vim/htop/less/`clear` work and shell scrollback is restored on exit)
+  - Cursor moves, erase, insert/delete lines & chars, carriage-return line redraws (fixes stray `%` prompt marks and prompt-visible-on-connect)
+  - 16 standard colors, 256-color palette, 24-bit true color (RGB); bold, dim, italic, underline, reverse video, strikethrough
+  - Persistent parser state machine handles escape sequences split across network reads
+- Oh My Zsh / Powerlevel compatible — renders themed prompts, git indicators, and Powerline/Nerd Font icons (bundled **MesloLGS NF**, registered by `FontRegistrar`)
 - Auto-scrolling terminal output
 - Connection status indicators
 

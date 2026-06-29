@@ -38,9 +38,6 @@ struct SSHTerminalView: View {
     /// Scroll view proxy for auto-scrolling
     @State private var scrollProxy: ScrollViewProxy?
 
-    /// Parsed terminal output with ANSI colors/styles
-    @State private var parsedOutput: AttributedString = AttributedString()
-
     /// Terminal appearance settings
     @ObservedObject private var terminalSettings = TerminalSettingsStore.shared
 
@@ -113,7 +110,8 @@ struct SSHTerminalView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(parsedOutput)
+                    // Display the screen rendered (and coalesced) by SSHManager.
+                    Text(sshManager.renderedScreen)
                         .font(terminalSettings.font)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -123,19 +121,16 @@ struct SSHTerminalView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(terminalSettings.backgroundColor)
-            .onChange(of: sshManager.terminalOutput) { oldValue, newValue in
-                // Parse ANSI escape codes into styled AttributedString
-                parsedOutput = ANSIParser.parse(
-                    newValue,
-                    defaultForeground: terminalSettings.foregroundColor,
-                    defaultFont: terminalSettings.font,
-                    boldFont: terminalSettings.boldFont
-                )
-                // Auto-scroll to bottom when new output arrives
+            // Auto-scroll to bottom when the screen changes. `outputVersion` is
+            // bumped once per coalesced render, so this fires at most once per
+            // frame and its action only scrolls (no state update).
+            .onChange(of: sshManager.outputVersion) { _, _ in
                 withAnimation {
                     proxy.scrollTo("terminal-bottom", anchor: .bottom)
                 }
             }
+            // Re-render if the user changes the terminal theme mid-session.
+            .onChange(of: terminalSettings.themeName) { _, _ in sshManager.requestRender() }
             .onAppear {
                 scrollProxy = proxy
             }
@@ -192,7 +187,7 @@ struct SSHTerminalView: View {
     }
     
     // MARK: - SSH Actions
-    
+
     /// Connects to the SSH server with biometric authentication
     private func connectToServer() async {
         isAuthenticating = true

@@ -22,13 +22,16 @@ iOS launches app
 ```
 ContentView
     ├── @Query fetches all SSHConnection objects from SwiftData (sorted by createdAt desc)
+    ├── .navigationDestination(for: SSHConnection.self) → SSHTerminalView(connection:)
+    │     (single, stack-level destination — value-based navigation)
     ├── IF no connections → shows emptyStateView (icon + "Add Connection" button)
-    └── IF connections exist → shows connectionsList
+    └── IF connections exist → shows connectionsList (a List, so swipeActions work)
             └── ForEach connection:
                     └── ConnectionRowView
                             ├── Displays: name, username, serverIP, lastUsedAt
                             ├── Normal mode:
-                            │     ├── Tap → navigates to SSHTerminalView(connection:)
+                            │     ├── Tap → NavigationLink(value: connection) → SSHTerminalView
+                            │     │        (resolved by the stack's navigationDestination)
                             │     └── Shows chevron icon
                             ├── Edit mode (toggled via toolbar ⋯ menu → Edit):
                             │     ├── Tap → opens AddConnectionView(connectionToEdit:) as sheet
@@ -103,11 +106,11 @@ saveConnection() — when connectionToEdit != nil
 SSHTerminalView
     ├── @StateObject SSHManager (created fresh for each connection)
     ├── @ObservedObject TerminalSettingsStore.shared (font, colors)
-    ├── @State parsedOutput: AttributedString (ANSI-parsed terminal content)
+    ├── @State parsedOutput: AttributedString (rendered terminal screen)
     ├── .task { connectToServer() }   ← runs when view appears
     └── Layout:
           ├── Terminal output (ScrollView + Text, styled per settings + ANSI)
-          │     └── Bound to parsedOutput (ANSIParser with settings colors/font)
+          │     └── Bound to parsedOutput (sshManager.renderedOutput, re-run on outputVersion)
           ├── Keyboard capture (invisible UIKeyInput view, auto-focused when connected)
           │     └── Special keys toolbar above keyboard: ESC, TAB, CTRL, arrows, |, ~, -, /
           └── Toolbar: connection status + settings gear + disconnect button
@@ -143,8 +146,8 @@ connectToServer() (SSHTerminalView.swift)
     │     └── [Background Task]: client.withPTY(ptyRequest) { output, writer in
     │           ├── Stores writer as _stdinWriter (for sendCommand)
     │           └── for try await event in output:
-    │                 ├── .stdout(buffer) → terminalOutput += text
-    │                 └── .stderr(buffer) → terminalOutput += text
+    │                 ├── .stdout(buffer) → terminal.feed(text); outputVersion += 1
+    │                 └── .stderr(buffer) → terminal.feed(text); outputVersion += 1
     │
     └── connection.lastUsedAt = Date()   ← updates SwiftData
 ```
@@ -169,9 +172,9 @@ User presses key on software/hardware keyboard
 Server echoes input and sends output back
     └── withPTY output AsyncSequence receives it
           └── for try await event in output:
-                └── Dispatches to MainActor → appends to terminalOutput
-                      └── .onChange triggers ANSIParser.parse(terminalOutput)
-                            └── parsedOutput updated (AttributedString with colors/styles)
+                └── Dispatches to MainActor → terminal.feed(text); outputVersion += 1
+                      └── .onChange(of: outputVersion) → renderTerminal()
+                            └── parsedOutput = sshManager.renderedOutput(...) (emulated screen)
                                   └── SwiftUI re-renders styled Text view
                                         └── ScrollView auto-scrolls
 ```

@@ -5,23 +5,27 @@ simplessh/
 │
 ├── Core Application Files
 │   ├── simplesshApp.swift                    # App entry point, SwiftData setup
-│   └── ContentView.swift                     # Main connection list with edit mode
+│   └── ContentView.swift                     # Main connection list (List + value-based navigation), edit mode
 │
 ├── Security & Authentication
 │   ├── KeychainManager.swift                 # Keychain storage & biometrics
 │   └── SSHConnection.swift                   # SwiftData model (keys in Keychain)
 │
 ├── SSH Functionality
-│   ├── SSHManager.swift                      # Citadel SSH client, PTY shell, Ed25519/RSA key parser
+│   ├── SSHManager.swift                      # Citadel SSH client, PTY shell, Ed25519/RSA key parser; owns TerminalEmulator
 │   ├── SSHTerminalView.swift             # Terminal view with real SSH via Citadel
-│   └── ANSIParser.swift                      # ANSI escape code → AttributedString (colors, styles)
+│   └── TerminalEmulator.swift                # Stateful VT100/xterm emulator: screen grid, cursor, scrollback, alt-screen → AttributedString
 │
 ├── UI Components
 │   ├── AddConnectionView.swift               # Add/edit connection form with Keychain integration
 │   ├── SettingsView.swift                    # App appearance + terminal theme settings with live preview
-│   ├── TerminalSettings.swift                # AppAppearance enum + settings model (@AppStorage persistence)
+│   ├── TerminalSettings.swift                # AppAppearance + TerminalFont (incl. bundled MesloLGS NF) + theme model (@AppStorage)
 │   ├── TerminalKeyboardView.swift            # UIKeyInput keyboard capture for direct PTY input
+│   ├── FontRegistrar.swift                   # Registers bundled Nerd Fonts (MesloLGS NF) at launch via Core Text
 │   └── MigrationHelper.swift                 # Migration utilities & UI
+│
+├── Resources
+│   └── Fonts/                                # MesloLGS NF (Regular/Bold) — Nerd Font for prompt/Powerline icons
 │
 ├── Configuration
 │   ├── simplessh.entitlements                # App Sandbox + network.client entitlement
@@ -65,7 +69,7 @@ SettingsView.swift          → Unified theme picker (font, size, colors) with l
 ```
 SSHManager.swift            → Citadel SSH client, PTY sessions, key parsing
 KeychainManager.swift       → Secure storage, biometric auth, access control
-ANSIParser.swift            → ANSI escape codes → styled AttributedString
+TerminalEmulator.swift      → VT100/xterm emulator: grid, cursor, scrollback, alt-screen → styled AttributedString
 TerminalSettingsStore       → App appearance mode, font, size, color preferences (@AppStorage)
 ```
 
@@ -87,7 +91,7 @@ Citadel                     → Pure Swift SSH client
 
 ### Must Review:
 1. **SSHManager.swift** — Core SSH logic, Ed25519/RSA key parsers, PTY shell
-2. **ANSIParser.swift** — ANSI color/style rendering for Oh My Zsh compatibility
+2. **TerminalEmulator.swift** — VT100/xterm screen emulation (scrollback, alt-screen, Oh My Zsh / Powerlevel prompts)
 3. **KeychainManager.swift** — Security implementation
 4. **SSHTerminalView.swift** — Terminal UI
 

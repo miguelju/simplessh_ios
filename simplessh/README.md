@@ -79,7 +79,8 @@ Simple SSH is an iPhone app that provides a full-featured SSH terminal — conne
 - **KeychainManager**: Secure key storage, biometric authentication, access control
 
 ### Utilities
-- **ANSIParser**: Converts ANSI escape codes to styled `AttributedString` for terminal rendering (colors, bold, italic, underline, 256-color, true color)
+- **TerminalEmulator**: Stateful VT100/xterm terminal emulator — screen grid, cursor, scrollback, and alternate-screen buffer — rendering to a styled `AttributedString` (colors, bold, italic, underline, 256-color, true color). Supports full-screen apps (vim, htop, less) and Oh My Zsh / Powerlevel prompts.
+- **FontRegistrar**: Registers the bundled MesloLGS NF Nerd Font at launch so prompt/Powerline icons render
 - **TerminalSettingsStore**: Persists app appearance mode and terminal preferences (font, size, colors) via `@AppStorage`
 
 ### SSH Library

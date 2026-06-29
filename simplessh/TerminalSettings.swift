@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import UIKit
 
 /// App-wide appearance mode (light, dark, or follow system)
 enum AppAppearance: String, CaseIterable, Identifiable {
@@ -29,6 +30,7 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 
 /// Available monospaced fonts for the terminal
 enum TerminalFont: String, CaseIterable, Identifiable {
+    case meslo = "MesloLGS NF"
     case system = "System Mono"
     case menlo = "Menlo"
     case courier = "Courier"
@@ -38,9 +40,14 @@ enum TerminalFont: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// The family name used to resolve the bundled Nerd Font (see FontRegistrar).
+    static let mesloFamilyName = "MesloLGS NF"
+
     /// The SwiftUI Font for a given size
     func font(size: CGFloat) -> Font {
         switch self {
+        case .meslo:
+            return Self.mesloFont(size: size, bold: false)
         case .system:
             return .system(size: size, design: .monospaced)
         case .menlo:
@@ -59,6 +66,8 @@ enum TerminalFont: String, CaseIterable, Identifiable {
     /// Bold variant
     func boldFont(size: CGFloat) -> Font {
         switch self {
+        case .meslo:
+            return Self.mesloFont(size: size, bold: true)
         case .system:
             return .system(size: size, design: .monospaced).bold()
         case .menlo:
@@ -72,6 +81,24 @@ enum TerminalFont: String, CaseIterable, Identifiable {
         case .monaco:
             return .custom("Monaco", size: size).bold()
         }
+    }
+
+    /// Resolves the bundled MesloLGS NF face by family name + bold trait. Using
+    /// the family name (rather than a hard-coded PostScript name) reliably picks
+    /// the registered regular/bold faces; falls back to the system monospaced
+    /// font if the bundled font failed to register.
+    private static func mesloFont(size: CGFloat, bold: Bool) -> Font {
+        var descriptor = UIFontDescriptor(fontAttributes: [.family: mesloFamilyName])
+        if bold, let boldDescriptor = descriptor.withSymbolicTraits(.traitBold) {
+            descriptor = boldDescriptor
+        }
+        let uiFont = UIFont(descriptor: descriptor, size: size)
+        // If the family isn't available, UIKit returns a system fallback whose
+        // familyName won't match — use the design-monospaced system font instead.
+        if uiFont.familyName != mesloFamilyName {
+            return .system(size: size, design: .monospaced)
+        }
+        return Font(uiFont)
     }
 }
 
@@ -88,17 +115,13 @@ enum TerminalTheme: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// The font family for this theme
+    /// The font family for this theme. All presets use the bundled MesloLGS NF
+    /// so Powerline / Nerd Font prompt icons render (it's a clean monospaced
+    /// font for ordinary text too). The Custom theme respects the user's pick.
     var terminalFont: TerminalFont {
         switch self {
-        case .classicGreen: return .system
-        case .amber:        return .courier
-        case .cyan:         return .sfMono
-        case .white:        return .menlo
-        case .solarized:    return .menlo
-        case .dracula:      return .sfMono
-        case .ohMyZsh:      return .menlo
-        case .custom:       return .system
+        case .custom: return .system
+        default:      return .meslo
         }
     }
 

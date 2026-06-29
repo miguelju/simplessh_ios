@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 import Combine
 import Citadel
 import NIOSSH
@@ -25,11 +26,52 @@ class SSHManager: ObservableObject {
     /// Connection status message
     @Published private(set) var statusMessage: String = ""
 
-    /// Terminal output stream (processed for display — handles backspace)
-    @Published var terminalOutput: String = ""
+    /// Bumped once per coalesced render so the view can react (e.g. auto-scroll).
+    @Published private(set) var outputVersion: Int = 0
+
+    /// The fully rendered terminal screen, published for the view to display
+    /// directly. Rendering is coalesced (see `scheduleRender`) so it happens at
+    /// most once per run-loop hop — driving SwiftUI state from a high-frequency
+    /// `onChange` updated multiple times per frame, which made SwiftUI drop
+    /// renders (the prompt sometimes not appearing until the next keystroke).
+    @Published private(set) var renderedScreen: AttributedString = AttributedString()
 
     /// Last error encountered
     @Published private(set) var lastError: SSHError?
+
+    /// The terminal screen emulator. Owns the screen grid, cursor, scrollback,
+    /// and alternate-screen buffer; fed raw PTY bytes as they arrive.
+    let terminal = TerminalEmulator()
+
+    /// Whether a coalesced render is already queued for this run-loop hop.
+    private var renderScheduled = false
+
+    /// Requests a re-render (e.g. after the user changes the theme mid-session).
+    /// Safe to call frequently — renders are coalesced.
+    func requestRender() {
+        scheduleRender()
+    }
+
+    /// Coalesces rendering: many `feed` calls within one hop collapse into a
+    /// single screen render plus one `outputVersion` bump. This is what prevents
+    /// the "onChange tried to update multiple times per frame" dropped-render bug
+    /// that left the prompt invisible until a keystroke.
+    private func scheduleRender() {
+        guard !renderScheduled else { return }
+        renderScheduled = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.renderScheduled = false
+            let settings = TerminalSettingsStore.shared
+            self.renderedScreen = self.terminal.render(
+                defaultForeground: settings.foregroundColor,
+                defaultBackground: settings.backgroundColor,
+                defaultFont: settings.font,
+                boldFont: settings.boldFont
+            )
+            self.outputVersion &+= 1
+        }
+    }
 
     // MARK: - Private Properties
 
@@ -89,7 +131,8 @@ class SSHManager: ObservableObject {
         currentConnection = connection
         statusMessage = "Connecting to \(connection.serverIP)..."
         lastError = nil
-        terminalOutput = ""
+        terminal.reset()
+        scheduleRender()
 
         // Retrieve SSH key from Keychain
         guard let privateKeyString = KeychainManager.shared.retrieveSSHKey(for: connection.id.uuidString) else {
@@ -138,7 +181,7 @@ class SSHManager: ObservableObject {
                 guard let self else { return }
                 self.isConnected = false
                 self.statusMessage = "Disconnected"
-                self.processTerminalOutput("\n\n[Connection closed]\n")
+                self.processTerminalOutput("\r\n\r\n[Connection closed]\r\n")
                 self._stdinWriter = nil
             }
         }
@@ -181,7 +224,7 @@ class SSHManager: ObservableObject {
                 // Normal disconnection
             } catch {
                 await MainActor.run {
-                    self.processTerminalOutput("\n[Shell error: \(error.localizedDescription)]\n")
+                    self.processTerminalOutput("\r\n[Shell error: \(error.localizedDescription)]\r\n")
                     self.isConnected = false
                     self.statusMessage = "Shell closed"
                 }
@@ -199,7 +242,7 @@ class SSHManager: ObservableObject {
         self.client = nil
         isConnected = false
         statusMessage = "Disconnected"
-        processTerminalOutput("\n\n[Connection closed]\n")
+        processTerminalOutput("\r\n\r\n[Connection closed]\r\n")
 
         Task {
             try? await client?.close()
@@ -246,30 +289,17 @@ class SSHManager: ObservableObject {
 
     // MARK: - Terminal Output Processing
 
-    /// Pre-processes raw PTY output to handle backspace (BS, 0x08) which erases the
-    /// previous character. The backspace echo from the PTY sends `\b \b` (backspace,
-    /// space, backspace) to visually erase a character, but since our output is a string
-    /// buffer (not a cursor-based display), we need to actually remove the character.
-    ///
-    /// All other characters — including ANSI escape sequences, \r, \n — are passed
-    /// through unchanged for the ANSIParser to handle.
+    /// Feeds raw PTY output to the terminal emulator and signals the UI to
+    /// re-render. The emulator handles all control characters (backspace,
+    /// carriage return, cursor moves, erase, scrolling, alternate screen, …).
     private func processTerminalOutput(_ text: String) {
-        // Work on a local copy, then assign once to avoid flooding @Published
-        // with per-character objectWillChange notifications (which can cause
-        // SwiftUI to throttle updates, leaving the prompt un-rendered until
-        // the next keystroke triggers a layout pass).
-        var buffer = terminalOutput
-        for char in text {
-            if char == "\u{08}" {
-                // Backspace: remove the last non-newline character
-                if let last = buffer.last, last != "\n" {
-                    buffer.removeLast()
-                }
-            } else {
-                buffer.append(char)
-            }
+        terminal.feed(text)
+        // Answer any terminal queries (DSR/DA/OSC color) the emulator generated.
+        // Some prompts probe the terminal and block until they get these replies.
+        if let reply = terminal.drainReply() {
+            Task { try? await self.sendRawData(Data(reply.utf8)) }
         }
-        terminalOutput = buffer
+        scheduleRender()
     }
 
     // MARK: - Key Parsing

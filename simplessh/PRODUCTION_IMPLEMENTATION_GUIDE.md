@@ -196,16 +196,18 @@ Terminal appearance is fully customizable via `SettingsView.swift` and `Terminal
 - **Access**: Settings gear icon in both the connection list and terminal view toolbars
 - ANSI color codes from the server still override the default text color when present
 
-### ANSI Color Support (Implemented)
+### Terminal Emulation (Implemented)
 
-Full ANSI escape code rendering is implemented in `ANSIParser.swift`. The parser converts raw terminal output into styled `AttributedString` supporting:
+A stateful VT100/xterm emulator is implemented in `TerminalEmulator.swift`. It maintains a live screen grid, cursor, scroll region, bounded scrollback, and an alternate-screen buffer (fed raw PTY bytes via `feed(_:)`), and renders to a styled `AttributedString` supporting:
 
 - **16 standard colors** (SGR 30-37, 40-47, 90-97, 100-107)
 - **256-color palette** (SGR 38;5;N, 48;5;N) — 6x6x6 color cube + grayscale ramp
 - **24-bit true color** (SGR 38;2;R;G;B, 48;2;R;G;B)
 - **Text styles**: bold, dim, italic, underline, reverse video, strikethrough
-- **Non-visual stripping**: cursor movement, OSC (terminal title), character set designation
-- **Oh My Zsh compatible**: renders themed prompts, git status, Powerline symbols
+- **Cursor & screen control**: cursor moves (CUU/CUD/CUF/CUB/CHA/VPA/CUP), erase (ED/EL/ECH), insert/delete lines & chars (IL/DL/ICH/DCH), scroll regions (DECSTBM), save/restore cursor
+- **Alternate screen** (`?1049/?47/?1047`): full-screen apps (vim, htop, less, `clear`) render correctly and the shell scrollback is restored on exit
+- **Carriage-return line redraws**: zsh/Powerlevel prompts render without stray `%` marks and appear immediately on connect
+- **Oh My Zsh / Powerlevel compatible**: themed prompts, git status, and Powerline/Nerd Font icons (bundled MesloLGS NF via `FontRegistrar`)
 
 ### Multiple Sessions
 

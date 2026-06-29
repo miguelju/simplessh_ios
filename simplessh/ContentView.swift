@@ -42,6 +42,13 @@ struct ContentView: View {
                 mainContent
             }
             .navigationTitle("SSH Connections")
+            // Single destination resolved by the stack. Using value-based
+            // navigation (instead of a per-row closure NavigationLink) is what
+            // makes selecting *any* row — not just the first — work reliably
+            // inside a LazyVStack/ScrollView.
+            .navigationDestination(for: SSHConnection.self) { connection in
+                SSHTerminalView(connection: connection)
+            }
             .toolbar {
                 toolbarContent
             }
@@ -131,38 +138,44 @@ struct ContentView: View {
         .padding()
     }
     
-    /// List of saved SSH connections
+    /// List of saved SSH connections.
+    /// Uses a `List` (not a ScrollView/LazyVStack) so that the per-row
+    /// `.swipeActions` actually function — swipe-to-delete only works inside a
+    /// List. The list chrome is hidden so the custom glass cards and the
+    /// background gradient show through unchanged.
     private var connectionsList: some View {
-        ScrollView {
-            LazyVStack(spacing: 16) {
-                ForEach(connections) { connection in
-                    // Pass edit mode state and edit callback to each row.
-                    // In edit mode, tapping a row opens the edit sheet instead of the terminal.
-                    ConnectionRowView(
-                        connection: connection,
-                        isEditMode: editMode == .active,
-                        onEdit: {
-                            connectionToEdit = connection
-                        }
-                    )
-                    .contextMenu {
-                        // Long-press context menu: edit or delete without entering edit mode
-                        Button {
-                            connectionToEdit = connection
-                        } label: {
-                            Label("Edit", systemImage: "pencil")
-                        }
-                        
-                        Button(role: .destructive) {
-                            deleteConnection(connection)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
+        List {
+            ForEach(connections) { connection in
+                // Pass edit mode state and edit callback to each row.
+                // In edit mode, tapping a row opens the edit sheet instead of the terminal.
+                ConnectionRowView(
+                    connection: connection,
+                    isEditMode: editMode == .active,
+                    onEdit: {
+                        connectionToEdit = connection
+                    }
+                )
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .contextMenu {
+                    // Long-press context menu: edit or delete without entering edit mode
+                    Button {
+                        connectionToEdit = connection
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+
+                    Button(role: .destructive) {
+                        deleteConnection(connection)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
                     }
                 }
             }
-            .padding()
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
     
     /// Toolbar content with add and edit buttons
@@ -244,14 +257,18 @@ struct ConnectionRowView: View {
             }
             .buttonStyle(.plain)
         } else {
-            // In normal mode, tapping navigates to the terminal
-            NavigationLink {
-                SSHTerminalView(connection: connection)
-            } label: {
-                rowContent(showEditIcon: false)
-            }
-            .buttonStyle(.plain)
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            // In normal mode, tapping navigates to the terminal.
+            // The NavigationLink is placed in the row background so the List
+            // doesn't draw its own trailing disclosure chevron (we already show
+            // a chevron inside the glass card — otherwise there are two). The
+            // destination is resolved by `.navigationDestination(for:)` on the
+            // enclosing NavigationStack.
+            rowContent(showEditIcon: false)
+                .background(
+                    NavigationLink(value: connection) { EmptyView() }
+                        .opacity(0)
+                )
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
                     withAnimation {
                         connection.deleteSSHKey()

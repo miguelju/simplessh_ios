@@ -32,6 +32,11 @@ struct simplesshApp: App {
     /// Terminal settings store (observes appearance changes)
     @ObservedObject private var settings = TerminalSettingsStore.shared
 
+    init() {
+        // Register bundled Nerd Fonts so terminal themes can render prompt icons.
+        FontRegistrar.registerBundledFonts()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

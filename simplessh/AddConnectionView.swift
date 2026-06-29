@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import Network
 
 /// View for adding or editing SSH connection details
 /// Features a modern Liquid Glass design with intuitive input fields
@@ -245,11 +246,21 @@ struct AddConnectionView: View {
             return
         }
         
-        guard !serverIP.isEmpty else {
+        // Normalize the host: trim surrounding whitespace/newlines (easy to paste in).
+        let host = serverIP.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !host.isEmpty else {
             showError(message: "Please enter a server IP or hostname")
             return
         }
-        
+
+        // Reject malformed addresses (empty octets, double dots, bad characters)
+        // before saving, so typos surface here instead of as a cryptic network
+        // error at connect time (e.g. "172.20..20.222").
+        guard Self.isValidHost(host) else {
+            showError(message: "\u{201C}\(host)\u{201D} isn't a valid IP address or hostname. Check for typos such as empty octets or double dots (e.g. 172.20..20.222).")
+            return
+        }
+
         guard !username.isEmpty else {
             showError(message: "Please enter a username")
             return
@@ -271,7 +282,7 @@ struct AddConnectionView: View {
         if let connection = connectionToEdit {
             // Update existing connection
             connection.name = connectionName
-            connection.serverIP = serverIP
+            connection.serverIP = host
             connection.username = username
             connection.port = portNumber
             connection.requiresBiometric = requireBiometric
@@ -287,7 +298,7 @@ struct AddConnectionView: View {
             // Create and save a new connection
             let connection = SSHConnection(
                 name: connectionName,
-                serverIP: serverIP,
+                serverIP: host,
                 username: username,
                 port: portNumber,
                 requiresBiometric: requireBiometric
@@ -312,6 +323,47 @@ struct AddConnectionView: View {
     private func showError(message: String) {
         errorMessage = message
         showError = true
+    }
+
+    // MARK: - Host Validation
+
+    /// Validates that a string is a well-formed IPv4 address, IPv6 address, or
+    /// DNS hostname. Catches common typos like empty octets, double dots
+    /// (`172.20..20.222`), leading/trailing dots, and stray whitespace.
+    /// - Parameter host: The already-trimmed host string.
+    /// - Returns: `true` if the host is structurally valid.
+    static func isValidHost(_ host: String) -> Bool {
+        guard !host.isEmpty, host.count <= 253 else { return false }
+
+        // No internal whitespace, and no empty labels/octets. The empty-label
+        // check (leading/trailing dot or `..`) is what rejects "172.20..20.222".
+        guard !host.contains(where: { $0.isWhitespace }) else { return false }
+        guard !host.hasPrefix("."), !host.hasSuffix("."), !host.contains("..") else { return false }
+
+        // IPv6 (and IPv4-in-IPv6) — let the Network framework parse it.
+        if host.contains(":") {
+            return IPv6Address(host) != nil
+        }
+
+        // Dotted-decimal that's clearly an IPv4 attempt (digits + dots only):
+        // require exactly four octets, each 0–255.
+        if host.allSatisfy({ $0.isNumber || $0 == "." }) {
+            let octets = host.split(separator: ".", omittingEmptySubsequences: false)
+            guard octets.count == 4 else { return false }
+            return octets.allSatisfy { octet in
+                if let value = Int(octet), (0...255).contains(value) { return true }
+                return false
+            }
+        }
+
+        // Otherwise treat it as a DNS hostname: dot-separated labels of
+        // letters/digits/hyphens, each 1–63 chars, not starting/ending with a hyphen.
+        let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+        return labels.allSatisfy { label in
+            guard (1...63).contains(label.count) else { return false }
+            guard label.first != "-", label.last != "-" else { return false }
+            return label.allSatisfy { $0.isLetter || $0.isNumber || $0 == "-" }
+        }
     }
 }
 
