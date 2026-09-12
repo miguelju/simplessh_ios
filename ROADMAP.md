@@ -115,7 +115,7 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   (its three wrappers went with `hasSSHKey`). `SSHManagerTests` run `connect`
   against `InMemoryKeyStore`; 60 tests green.
 
-- [~] **B3 · GitHub Actions CI** (M)
+- [x] **B3 · GitHub Actions CI** (M)
   Workflow: build + test on a macOS runner for every PR and push to `main`,
   path-filtered (`**/*.md` → no run; workflow file includes itself in
   `paths:`), all third-party actions SHA-pinned. Public repo ⇒ hosted macOS
@@ -126,8 +126,10 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   build 17F113, identical to the local toolchain, so B3 uses hosted runners.
   The Mac mini (Xcode 26.6, no runner installed) stays a fallback only.
   *Done when:* a green run on a PR; a deliberate test failure turns it red.
-  *In progress 2026-09-12:* workflow added with a deliberately failing test in
-  the same commit (red check); the follow-up commit removes it (green check).
+  *Done 2026-09-12 (PR #8):* `.github/workflows/ci.yml`. The PR's first
+  commit carried a deliberately failing test and its run was red (build,
+  simulator and the other 60 tests fine; artifact uploaded); the second
+  commit removed it and its run was green.
 
 - [ ] **B4 · Repo hardening** (S)
   Apply the four rulesets (`protect-main` with Admin bypass,
