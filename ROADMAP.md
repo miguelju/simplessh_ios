@@ -39,7 +39,7 @@ Mechanical cleanups that make every later diff smaller and reviews faster.
   *Done when:* no Swift file outside `simplessh/`; project builds; groups
   match folders on disk.
 
-- [ ] **A2 · Delete dead code** (S)
+- [x] **A2 · Delete dead code** (S)
   Remove `MigrationHelper.swift` (292 lines, zero callers, no-op migration),
   `SSHManager.sendCommand`, `KeychainManager.updateSSHKey`,
   `KeychainManager.authenticateUser`, the unused `scrollProxy` state in

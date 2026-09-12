@@ -30,7 +30,6 @@ Face ID, Keychain, and SSH connectivity require a real device — simulator has 
 - **TerminalSettingsStore** (`@MainActor`, singleton): Persists terminal appearance preferences via `@AppStorage`. Stores selected theme (7 built-in presets + Custom) that bundles font family, font size, foreground color, and background color. Custom theme allows independent control of all settings. Used by `ANSIParser`, `SSHTerminalView`, and `SettingsView`.
 - **KeychainManager** (singleton): Stores SSH private keys in iOS Keychain with optional biometric (`SecAccessControl`) protection. Keys are never stored in SwiftData.
 - **SSHConnection** (SwiftData `@Model`): Persists connection metadata (name, host, username, port). Delegates key storage/retrieval to `KeychainManager`.
-- **MigrationHelper**: One-time migration from older demo storage to Keychain-based storage.
 
 **Views:**
 - `ContentView` — connection list with swipe-to-delete, settings access
@@ -62,7 +61,7 @@ These are configured via `INFOPLIST_KEY_` build settings in the Xcode project (a
   - **PEM RSA (PKCS#1)**: `-----BEGIN RSA PRIVATE KEY-----` — parsed via custom ASN.1 DER parser, extracts modulus/exponents for `Insecure.RSA.PrivateKey`
 - Key type is auto-detected from the file content; the correct Citadel authentication method (`.ed25519()` or `.rsa()`) is selected automatically
 - Encrypted private keys are not supported (key must have no passphrase)
-- The bridging header (`simplessh-Bridging-Header.h`) is empty — Citadel is pure Swift
+- No bridging header — Citadel is pure Swift
 
 ## Dependencies (Swift Package Manager)
 

@@ -183,44 +183,6 @@ class KeychainManager {
         }
     }
     
-    /// Updates an existing SSH key in the Keychain
-    /// - Parameters:
-    ///   - key: The new SSH private key string
-    ///   - identifier: Unique identifier for the key
-    /// - Returns: True if successful, false otherwise
-    @discardableResult
-    func updateSSHKey(_ key: String, for identifier: String) -> Bool {
-        guard let keyData = key.data(using: .utf8) else {
-            return false
-        }
-        
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: identifier
-        ]
-        
-        if let accessGroup = accessGroup {
-            query[kSecAttrAccessGroup as String] = accessGroup
-        }
-        
-        let attributes: [String: Any] = [
-            kSecValueData as String: keyData
-        ]
-        
-        let status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-        
-        if status == errSecSuccess {
-            return true
-        } else if status == errSecItemNotFound {
-            // If key doesn't exist, create it
-            return storeSSHKey(key, for: identifier)
-        } else {
-            print("Failed to update SSH key: \(status)")
-            return false
-        }
-    }
-    
     // MARK: - Biometric Authentication
     
     /// Checks if biometric authentication is available on this device
@@ -253,32 +215,6 @@ class KeychainManager {
             return "None"
         @unknown default:
             return "Unknown"
-        }
-    }
-    
-    /// Authenticates the user with biometrics
-    /// - Parameter reason: The reason to display to the user
-    /// - Returns: True if authentication succeeded, false otherwise
-    func authenticateUser(reason: String) async -> Bool {
-        let context = LAContext()
-        var error: NSError?
-        
-        // Check if biometric authentication is available
-        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            print("Biometric authentication not available: \(error?.localizedDescription ?? "Unknown")")
-            return false
-        }
-        
-        // Perform authentication
-        do {
-            let success = try await context.evaluatePolicy(
-                .deviceOwnerAuthenticationWithBiometrics,
-                localizedReason: reason
-            )
-            return success
-        } catch {
-            print("Biometric authentication failed: \(error.localizedDescription)")
-            return false
         }
     }
     

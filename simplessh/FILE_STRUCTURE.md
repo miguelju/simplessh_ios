@@ -19,8 +19,7 @@ simplessh/
 │   └── TerminalKeyboardView.swift            # UIKeyInput keyboard capture for direct PTY input
 │
 ├── Security/
-│   ├── KeychainManager.swift                 # Keychain storage & biometrics
-│   └── MigrationHelper.swift                 # Migration utilities & UI (unused; removed in roadmap item A2)
+│   └── KeychainManager.swift                 # Keychain storage & biometrics
 │
 ├── Settings/
 │   ├── TerminalSettings.swift                # AppAppearance + TerminalFont (incl. bundled MesloLGS NF) + theme model (@AppStorage)
@@ -31,9 +30,7 @@ simplessh/
 │   └── Fonts/                                # MesloLGS NF (Regular/Bold) — Nerd Font for prompt/Powerline icons
 │
 ├── Configuration
-│   ├── simplessh.entitlements                # App Sandbox + network.client entitlement
-│   ├── Info-plist-additions.xml              # Reference for Info.plist keys
-│   └── simplessh-Bridging-Header.h           # Empty (Citadel is pure Swift)
+│   └── simplessh.entitlements                # App Sandbox + network.client entitlement
 │
 ├── Dependencies (Swift Package Manager)
 │   └── Citadel (0.9.x)                      # Resolved by Xcode automatically

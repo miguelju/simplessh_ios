@@ -251,25 +251,6 @@ class SSHManager: ObservableObject {
 
     // MARK: - Command Execution
 
-    /// Sends a command to the SSH session
-    /// - Parameter command: Command string to execute
-    /// - Throws: SSHError if command fails
-    func sendCommand(_ command: String) async throws {
-        guard let writer = _stdinWriter, isConnected else {
-            throw SSHError.sessionNotConnected
-        }
-
-        let commandWithNewline = command + "\n"
-        var buffer = ByteBufferAllocator().buffer(capacity: commandWithNewline.utf8.count)
-        buffer.writeString(commandWithNewline)
-
-        do {
-            try await writer.write(buffer)
-        } catch {
-            throw SSHError.commandExecutionFailed(error.localizedDescription)
-        }
-    }
-
     /// Sends raw data to the SSH channel (for special keys like arrows, etc.)
     /// - Parameter data: Raw data to send
     func sendRawData(_ data: Data) async throws {

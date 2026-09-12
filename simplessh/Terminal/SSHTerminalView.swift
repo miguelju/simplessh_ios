@@ -35,9 +35,6 @@ struct SSHTerminalView: View {
     /// Whether the terminal was previously connected (for exit detection)
     @State private var wasConnected: Bool = false
 
-    /// Scroll view proxy for auto-scrolling
-    @State private var scrollProxy: ScrollViewProxy?
-
     /// Terminal appearance settings
     @ObservedObject private var terminalSettings = TerminalSettingsStore.shared
 
@@ -131,9 +128,6 @@ struct SSHTerminalView: View {
             }
             // Re-render if the user changes the terminal theme mid-session.
             .onChange(of: terminalSettings.themeName) { _, _ in sshManager.requestRender() }
-            .onAppear {
-                scrollProxy = proxy
-            }
         }
     }
     

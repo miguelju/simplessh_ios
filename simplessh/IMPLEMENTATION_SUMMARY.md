@@ -25,7 +25,7 @@ try await client.withPTY(ptyRequest) { output, writer in
 }
 
 // Command execution
-try await sshManager.sendCommand("ls -la")
+try await sshManager.sendRawData(Data("ls -la\r".utf8))
 ```
 
 ### 2. Edit Existing Connections

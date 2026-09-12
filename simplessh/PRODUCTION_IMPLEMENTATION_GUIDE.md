@@ -57,7 +57,7 @@ let client = try await SSHClient.connect(
 
 // Interactive PTY shell
 try await client.withPTY(ptyRequest) { output, writer in
-    self._stdinWriter = writer  // Store for sendCommand()
+    self._stdinWriter = writer  // Store for sendRawData()
     for try await event in output {
         // Stream stdout/stderr to UI
     }

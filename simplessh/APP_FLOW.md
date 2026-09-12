@@ -144,7 +144,7 @@ connectToServer() (SSHTerminalView.swift)
     │     ├── client.onDisconnect { ... }  ← monitor for disconnection
     │     │
     │     └── [Background Task]: client.withPTY(ptyRequest) { output, writer in
-    │           ├── Stores writer as _stdinWriter (for sendCommand)
+    │           ├── Stores writer as _stdinWriter (for sendRawData)
     │           └── for try await event in output:
     │                 ├── .stdout(buffer) → terminal.feed(text); outputVersion += 1
     │                 └── .stderr(buffer) → terminal.feed(text); outputVersion += 1
@@ -224,10 +224,8 @@ KeychainManager (singleton)
     ├── retrieveSSHKey()           → SecItemCopyMatching (triggers biometric)
     ├── retrieveSSHKeyWithoutAuth() → SecItemCopyMatching (kSecUseAuthenticationUIFail)
     ├── deleteSSHKey()             → SecItemDelete
-    ├── updateSSHKey()             → SecItemUpdate
     ├── isBiometricAuthenticationAvailable() → LAContext.canEvaluatePolicy
     ├── biometricType()            → "Face ID" / "Touch ID" / "Optic ID" / "None"
-    ├── authenticateUser()         → LAContext biometrics only
     └── authenticateUserWithPasscode() → LAContext biometrics + passcode fallback
 ```
 
