@@ -1,0 +1,77 @@
+# Build and test on every pull request and every push to main.
+#
+# Runs the same command as README.md / CLAUDE.md on GitHub's hosted macos-26
+# image, whose default Xcode (26.6, build 17F113) matches the local toolchain.
+# Docs-only changes skip it. The workflow file is in its own trigger paths, so
+# a typo here fires the run that would catch it. Third-party actions are pinned
+# to commit SHAs (the comment is the tag they were resolved from).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**'
+      - '!**/*.md'
+      - '!LICENSE'
+      - '!simplessh/screenshots/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**'
+      - '!**/*.md'
+      - '!LICENSE'
+      - '!simplessh/screenshots/**'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  DESTINATION: platform=iOS Simulator,name=iPhone 17
+
+jobs:
+  test:
+    name: Build and test (iPhone 17 simulator)
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          xcrun simctl list devices available | grep -q 'iPhone 17 (' \
+            || { echo '::error::No "iPhone 17" simulator on this image'; exit 1; }
+
+      - name: Build and test
+        run: |
+          set -o pipefail
+          xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
+            -destination "$DESTINATION" \
+            -onlyUsePackageVersionsFromResolvedFile \
+            -derivedDataPath DerivedData \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            test 2>&1 | tee xcodebuild.log \
+            | { grep -E 'Test [Cc]ase|Test [Ss]uite|error:|warning: .*simplessh(Tests)?/|^\*\* ' || true; }
+
+      - name: Upload log and result bundle
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results
+          path: |
+            xcodebuild.log
+            TestResults.xcresult
+          if-no-files-found: ignore

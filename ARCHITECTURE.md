@@ -277,3 +277,9 @@ SwiftNIO event loops. Keychain calls are synchronous on the main actor today
 - `TARGETED_DEVICE_FAMILY = 1`, `SUPPORTED_PLATFORMS = iphoneos iphonesimulator`,
   deployment target iOS 26.2.
 - Dependencies are pinned in `simplessh.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
+- CI: `.github/workflows/ci.yml` builds and tests on the hosted `macos-26`
+  image (Xcode 26.6 selected via `DEVELOPER_DIR`, iPhone 17 simulator,
+  `-onlyUsePackageVersionsFromResolvedFile`, no code signing). Path-filtered so
+  docs-only changes skip it; the workflow file is in its own trigger paths;
+  actions are pinned to commit SHAs; the log and `.xcresult` are uploaded on
+  failure.

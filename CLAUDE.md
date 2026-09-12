@@ -26,7 +26,10 @@ xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Packages are pinned by the committed `Package.resolved`. Keychain, Face ID and
+Packages are pinned by the committed `Package.resolved`. CI
+(`.github/workflows/ci.yml`) runs the test command above on GitHub's hosted
+`macos-26` image with Xcode 26.6 for every PR and push to `main`; docs-only
+changes skip it. Third-party actions there are SHA-pinned; keep them so. Keychain, Face ID and
 SSH connectivity need a physical device; the simulator only proves it compiles.
 
 ## Architecture in one screen

@@ -6,6 +6,10 @@ item ids (A1, B3, …) refer to [`ROADMAP.md`](ROADMAP.md).
 ## [Unreleased]
 
 ### Added
+- B3 — GitHub Actions workflow: build and test on the hosted `macos-26` image
+  (Xcode 26.6, iPhone 17 simulator) for every PR and push to `main`,
+  path-filtered so docs-only changes skip it, actions SHA-pinned, log and
+  result bundle uploaded on failure. CI badge in the README.
 - B2 — `KeyStore` protocol with a `\.keyStore` SwiftUI environment entry
   (default: the Keychain) and `SSHManagerTests`, which drive `connect` with an
   in-memory store: missing key, invalid key, valid key reaching a refused

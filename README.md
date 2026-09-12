@@ -1,5 +1,7 @@
 # Simple SSH — iPhone SSH Terminal Client
 
+[![CI](https://github.com/miguelju/simplessh_ios/actions/workflows/ci.yml/badge.svg)](https://github.com/miguelju/simplessh_ios/actions/workflows/ci.yml)
+
 A key-based SSH client for iPhone, built with SwiftUI, SwiftData and
 [Citadel](https://github.com/orlandos-nl/Citadel) (pure-Swift SSH on SwiftNIO).
 Save hosts, keep the private keys in the Keychain behind Face ID, and work in a
@@ -89,6 +91,11 @@ xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
 xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
+
+Continuous integration runs that same test command on GitHub's hosted
+`macos-26` image (Xcode 26.6) for every pull request and push to `main`
+(`.github/workflows/ci.yml`). Changes that touch only Markdown, the licence or
+screenshots skip it.
 
 ### Common issues
 
