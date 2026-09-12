@@ -31,7 +31,7 @@ Status legend: `[ ]` not started · `[~]` in progress (PR open) · `[x]` merged 
 
 Mechanical cleanups that make every later diff smaller and reviews faster.
 
-- [ ] **A1 · Reorganise sources by feature** (S)
+- [x] **A1 · Reorganise sources by feature** (S)
   Move `TerminalKeyboardView.swift` from the repo root into `simplessh/`.
   Group files: `App/` (app entry, fonts), `Hosts/` (model, list, form),
   `Terminal/` (SSHManager, TerminalEmulator, terminal view, keyboard),

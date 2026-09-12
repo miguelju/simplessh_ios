@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		D7193E2D2F7098EA000BE780 /* TerminalKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7193E2C2F7098EA000BE780 /* TerminalKeyboardView.swift */; };
 		D7BD320D2F6F47CE00E6C142 /* Citadel in Frameworks */ = {isa = PBXBuildFile; productRef = B1B2B3B4B5B6B7B8B9BBBB01 /* Citadel */; };
 /* End PBXBuildFile section */
 
@@ -29,7 +28,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		D7193E2C2F7098EA000BE780 /* TerminalKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalKeyboardView.swift; sourceTree = "<group>"; };
 		D7450C362F6B6FF90091A867 /* simplessh.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = simplessh.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7450C452F6B6FFB0091A867 /* simplesshTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = simplesshTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7450C4F2F6B6FFB0091A867 /* simplesshUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = simplesshUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -86,7 +84,6 @@
 				D7450C482F6B6FFB0091A867 /* simplesshTests */,
 				D7450C522F6B6FFB0091A867 /* simplesshUITests */,
 				D7450C372F6B6FF90091A867 /* Products */,
-				D7193E2C2F7098EA000BE780 /* TerminalKeyboardView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -244,7 +241,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D7193E2D2F7098EA000BE780 /* TerminalKeyboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

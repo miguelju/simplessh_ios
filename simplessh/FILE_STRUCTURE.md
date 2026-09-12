@@ -3,28 +3,31 @@
 ```
 simplessh/
 │
-├── Core Application Files
+├── App/
 │   ├── simplesshApp.swift                    # App entry point, SwiftData setup
-│   └── ContentView.swift                     # Main connection list (List + value-based navigation), edit mode
+│   └── FontRegistrar.swift                   # Registers bundled Nerd Fonts (MesloLGS NF) at launch via Core Text
 │
-├── Security & Authentication
-│   ├── KeychainManager.swift                 # Keychain storage & biometrics
-│   └── SSHConnection.swift                   # SwiftData model (keys in Keychain)
+├── Hosts/
+│   ├── SSHConnection.swift                   # SwiftData model (keys in Keychain)
+│   ├── ContentView.swift                     # Main connection list (List + value-based navigation), edit mode
+│   └── AddConnectionView.swift               # Add/edit connection form with Keychain integration
 │
-├── SSH Functionality
+├── Terminal/
 │   ├── SSHManager.swift                      # Citadel SSH client, PTY shell, Ed25519/RSA key parser; owns TerminalEmulator
-│   ├── SSHTerminalView.swift             # Terminal view with real SSH via Citadel
-│   └── TerminalEmulator.swift                # Stateful VT100/xterm emulator: screen grid, cursor, scrollback, alt-screen → AttributedString
+│   ├── TerminalEmulator.swift                # Stateful VT100/xterm emulator: screen grid, cursor, scrollback, alt-screen → AttributedString
+│   ├── SSHTerminalView.swift                 # Terminal view with real SSH via Citadel
+│   └── TerminalKeyboardView.swift            # UIKeyInput keyboard capture for direct PTY input
 │
-├── UI Components
-│   ├── AddConnectionView.swift               # Add/edit connection form with Keychain integration
-│   ├── SettingsView.swift                    # App appearance + terminal theme settings with live preview
+├── Security/
+│   ├── KeychainManager.swift                 # Keychain storage & biometrics
+│   └── MigrationHelper.swift                 # Migration utilities & UI (unused; removed in roadmap item A2)
+│
+├── Settings/
 │   ├── TerminalSettings.swift                # AppAppearance + TerminalFont (incl. bundled MesloLGS NF) + theme model (@AppStorage)
-│   ├── TerminalKeyboardView.swift            # UIKeyInput keyboard capture for direct PTY input
-│   ├── FontRegistrar.swift                   # Registers bundled Nerd Fonts (MesloLGS NF) at launch via Core Text
-│   └── MigrationHelper.swift                 # Migration utilities & UI
+│   └── SettingsView.swift                    # App appearance + terminal theme settings with live preview
 │
 ├── Resources
+│   ├── Assets.xcassets/                      # App icon, accent colour
 │   └── Fonts/                                # MesloLGS NF (Regular/Bold) — Nerd Font for prompt/Powerline icons
 │
 ├── Configuration
@@ -39,18 +42,13 @@ simplessh/
 │       ├── BigInt                            # RSA math
 │       └── swift-log                         # Logging
 │
-├── Documentation
-│   ├── README.md                             # Project overview
-│   ├── IMPLEMENTATION_SUMMARY.md             # Feature & architecture summary
-│   ├── PRODUCTION_IMPLEMENTATION_GUIDE.md    # Detailed setup & advanced features
-│   ├── QUICK_START.md                        # 5-minute setup guide
-│   ├── FILE_STRUCTURE.md                     # This file
-│   └── APP_FLOW.md                           # Application flow diagrams
-│
-└── Tests
-    ├── simplesshTests/                       # Unit tests
-    ├── simplesshUITests/                     # UI tests
-    └── simplesshUITestsLaunchTests/          # Launch tests
+└── Documentation
+    ├── README.md                             # Project overview
+    ├── IMPLEMENTATION_SUMMARY.md             # Feature & architecture summary
+    ├── PRODUCTION_IMPLEMENTATION_GUIDE.md    # Detailed setup & advanced features
+    ├── QUICK_START.md                        # 5-minute setup guide
+    ├── FILE_STRUCTURE.md                     # This file
+    └── APP_FLOW.md                           # Application flow diagrams
 ```
 
 ---
