@@ -18,6 +18,9 @@ struct AddConnectionView: View {
     /// Environment variable to dismiss this view
     @Environment(\.dismiss) private var dismiss
 
+    /// Where the private key is stored (Keychain in the app)
+    @Environment(\.keyStore) private var keyStore
+
     /// Current color scheme for adaptive styling
     @Environment(\.colorScheme) private var colorScheme
     
@@ -287,9 +290,10 @@ struct AddConnectionView: View {
             connection.port = portNumber
             connection.requiresBiometric = requireBiometric
             
-            // Update SSH key in Keychain only if a new one was provided
+            // Update the stored key only if a new one was provided
             if !sshKey.isEmpty {
-                guard connection.storeSSHKey(sshKey) else {
+                guard keyStore.storeSSHKey(sshKey, for: connection.id.uuidString,
+                                           requireBiometric: connection.requiresBiometric) else {
                     showError(message: "Failed to store SSH key securely. Please try again.")
                     return
                 }
@@ -304,8 +308,10 @@ struct AddConnectionView: View {
                 requiresBiometric: requireBiometric
             )
             
-            // Store SSH key in Keychain
-            guard connection.storeSSHKey(sshKey) else {
+            // Store the key before inserting the record, so a store failure
+            // leaves no orphan host
+            guard keyStore.storeSSHKey(sshKey, for: connection.id.uuidString,
+                                       requireBiometric: connection.requiresBiometric) else {
                 showError(message: "Failed to store SSH key securely. Please try again.")
                 return
             }

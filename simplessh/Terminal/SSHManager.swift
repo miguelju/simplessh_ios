@@ -46,10 +46,15 @@ class SSHManager: ObservableObject {
     /// Whether a coalesced render is already queued for this run-loop hop.
     private var renderScheduled = false
 
-    /// Requests a re-render (e.g. after the user changes the theme mid-session).
-    /// Safe to call frequently — renders are coalesced.
-    func requestRender() {
-        scheduleRender()
+    /// Colours and fonts used when rendering. The owning view sets it from the
+    /// settings it observes; a change re-renders the current screen. The
+    /// manager never reads the settings store itself.
+    var renderTheme: TerminalRenderTheme {
+        didSet { if renderTheme != oldValue { scheduleRender() } }
+    }
+
+    init(renderTheme: TerminalRenderTheme) {
+        self.renderTheme = renderTheme
     }
 
     /// Coalesces rendering: many `feed` calls within one hop collapse into a
@@ -62,12 +67,12 @@ class SSHManager: ObservableObject {
         Task { @MainActor [weak self] in
             guard let self else { return }
             self.renderScheduled = false
-            let settings = TerminalSettingsStore.shared
+            let theme = self.renderTheme
             self.renderedScreen = self.terminal.render(
-                defaultForeground: settings.foregroundColor,
-                defaultBackground: settings.backgroundColor,
-                defaultFont: settings.font,
-                boldFont: settings.boldFont
+                defaultForeground: theme.foreground,
+                defaultBackground: theme.background,
+                defaultFont: theme.font,
+                boldFont: theme.boldFont
             )
             self.outputVersion &+= 1
         }
@@ -125,20 +130,22 @@ class SSHManager: ObservableObject {
     // MARK: - Connection Management
 
     /// Connects to an SSH server using the provided connection details
-    /// - Parameter connection: SSH connection configuration
+    /// - Parameters:
+    ///   - connection: SSH connection configuration
+    ///   - keyStore: Where the host's private key is read from
     /// - Throws: SSHError if connection fails
-    func connect(to connection: SSHConnection) async throws {
+    func connect(to connection: SSHConnection, keyStore: any KeyStore) async throws {
         currentConnection = connection
         statusMessage = "Connecting to \(connection.serverIP)..."
         lastError = nil
         terminal.reset()
         scheduleRender()
 
-        // Retrieve SSH key from Keychain
-        guard let privateKeyString = KeychainManager.shared.retrieveSSHKey(for: connection.id.uuidString) else {
-            let error = SSHError.keyParsingFailed("No key found in Keychain")
+        // Retrieve the private key
+        guard let privateKeyString = keyStore.retrieveSSHKey(for: connection.id.uuidString) else {
+            let error = SSHError.keyParsingFailed("No key found for this host")
             self.lastError = error
-            self.statusMessage = "Failed to retrieve SSH key from Keychain"
+            self.statusMessage = "Failed to retrieve SSH key"
             throw error
         }
 

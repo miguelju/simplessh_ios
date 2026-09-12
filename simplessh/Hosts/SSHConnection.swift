@@ -8,8 +8,9 @@
 import Foundation
 import SwiftData
 
-/// Model representing an SSH connection configuration
-/// Connection details are stored in SwiftData, SSH keys are stored securely in Keychain
+/// Model representing an SSH connection configuration.
+/// Connection details are stored in SwiftData; the private key is stored by a
+/// `KeyStore` (the Keychain in the app) under `id.uuidString`.
 @Model
 final class SSHConnection {
     /// Unique identifier for the connection
@@ -44,7 +45,7 @@ final class SSHConnection {
     ///   - username: SSH username
     ///   - port: SSH port (default: 22)
     ///   - requiresBiometric: Whether to require biometric auth (default: true)
-    /// - Note: SSH key should be stored separately using KeychainManager
+    /// - Note: The SSH key is stored separately through a `KeyStore`.
     init(name: String, serverIP: String, username: String, port: Int = 22, requiresBiometric: Bool = true) {
         self.id = UUID()
         self.name = name
@@ -54,39 +55,5 @@ final class SSHConnection {
         self.createdAt = Date()
         self.lastUsedAt = nil
         self.requiresBiometric = requiresBiometric
-    }
-    
-    // MARK: - Keychain Integration
-    
-    /// Stores the SSH key securely in the Keychain
-    /// - Parameter key: The SSH private key in PEM format
-    /// - Returns: True if storage was successful
-    @discardableResult
-    func storeSSHKey(_ key: String) -> Bool {
-        return KeychainManager.shared.storeSSHKey(
-            key,
-            for: id.uuidString,
-            requireBiometric: requiresBiometric
-        )
-    }
-    
-    /// Retrieves the SSH key from the Keychain
-    /// Will trigger biometric authentication if required
-    /// - Returns: The SSH private key, or nil if not found or auth failed
-    func retrieveSSHKey() -> String? {
-        return KeychainManager.shared.retrieveSSHKey(for: id.uuidString)
-    }
-    
-    /// Deletes the SSH key from the Keychain
-    /// Should be called when deleting a connection
-    @discardableResult
-    func deleteSSHKey() -> Bool {
-        return KeychainManager.shared.deleteSSHKey(for: id.uuidString)
-    }
-    
-    /// Checks if an SSH key exists in the Keychain for this connection
-    /// - Returns: True if a key exists
-    func hasSSHKey() -> Bool {
-        return KeychainManager.shared.retrieveSSHKeyWithoutAuth(for: id.uuidString) != nil
     }
 }

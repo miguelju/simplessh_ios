@@ -10,7 +10,8 @@ import Security
 import LocalAuthentication
 
 /// Manager for securely storing and retrieving SSH keys using iOS Keychain
-/// Implements biometric authentication for accessing sensitive credentials
+/// Implements biometric authentication for accessing sensitive credentials.
+/// The app reaches it through the `KeyStore` protocol (see KeyStore.swift).
 class KeychainManager {
     /// Shared singleton instance
     static let shared = KeychainManager()
@@ -128,33 +129,6 @@ class KeychainManager {
             print("Failed to retrieve SSH key: \(status)")
             return nil
         }
-    }
-    
-    /// Retrieves an SSH private key without biometric authentication (for non-protected keys)
-    /// - Parameter identifier: Unique identifier for the key
-    /// - Returns: The SSH private key string, or nil if not found
-    func retrieveSSHKeyWithoutAuth(for identifier: String) -> String? {
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: identifier,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecUseAuthenticationContext as String: { let ctx = LAContext(); ctx.interactionNotAllowed = true; return ctx }() // Don't prompt for auth
-        ]
-        
-        if let accessGroup = accessGroup {
-            query[kSecAttrAccessGroup as String] = accessGroup
-        }
-        
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
-        if status == errSecSuccess, let data = result as? Data {
-            return String(data: data, encoding: .utf8)
-        }
-        
-        return nil
     }
     
     /// Deletes an SSH private key from the Keychain

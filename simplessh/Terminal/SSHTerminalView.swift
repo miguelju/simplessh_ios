@@ -14,8 +14,12 @@ struct SSHTerminalView: View {
     /// The SSH connection to use
     let connection: SSHConnection
     
-    /// SSH manager handling the connection
-    @StateObject private var sshManager = SSHManager()
+    /// SSH manager handling the connection. Seeded with the current theme;
+    /// kept in sync by the `renderTheme` onChange below.
+    @StateObject private var sshManager = SSHManager(renderTheme: TerminalSettingsStore.shared.renderTheme)
+
+    /// Where the host's private key is read from (Keychain in the app)
+    @Environment(\.keyStore) private var keyStore
     
     /// Whether authentication is in progress
     @State private var isAuthenticating: Bool = false
@@ -126,8 +130,9 @@ struct SSHTerminalView: View {
                     proxy.scrollTo("terminal-bottom", anchor: .bottom)
                 }
             }
-            // Re-render if the user changes the terminal theme mid-session.
-            .onChange(of: terminalSettings.themeName) { _, _ in sshManager.requestRender() }
+            // Re-render if the user changes the terminal theme (or a Custom
+            // font/colour) mid-session.
+            .onChange(of: terminalSettings.renderTheme) { _, theme in sshManager.renderTheme = theme }
         }
     }
     
@@ -202,7 +207,7 @@ struct SSHTerminalView: View {
             }
             
             // Connect to SSH server
-            try await sshManager.connect(to: connection)
+            try await sshManager.connect(to: connection, keyStore: keyStore)
             
             // Update last used date
             connection.lastUsedAt = Date()

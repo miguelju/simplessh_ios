@@ -7,8 +7,8 @@ terminal, or key handling. Feature status and planned work are in
 ## Layers
 
 ```
-SwiftUI views  →  managers (SSHManager, KeychainManager, TerminalSettingsStore)
-               →  data (SSHConnection in SwiftData; private keys in the Keychain)
+SwiftUI views  →  managers (SSHManager, TerminalSettingsStore)
+               →  data (SSHConnection in SwiftData; private keys behind KeyStore → KeychainManager)
                →  Citadel (SwiftNIO SSH)  →  remote sshd
 ```
 
@@ -22,7 +22,7 @@ simplessh/
 │   └── FontRegistrar.swift       Registers bundled MesloLGS NF (Regular/Bold) via Core Text
 ├── Hosts/
 │   ├── SSHConnection.swift       @Model: name, serverIP, username, port, createdAt, lastUsedAt,
-│   │                             requiresBiometric. Thin wrappers over KeychainManager keyed by id
+│   │                             requiresBiometric. No key logic; the key lives in a KeyStore under id
 │   ├── ContentView.swift         Host list (List + value-based NavigationLink), edit mode,
 │   │                             context menu, swipe-to-delete
 │   └── AddConnectionView.swift   Add/edit form, validation, isValidHost(), InputFieldView
@@ -34,7 +34,10 @@ simplessh/
 │   └── TerminalKeyboardView.swift TerminalTextField (UITextField subclass) + TerminalKeyboardCapture
 │                                 (UIViewRepresentable); accessory toolbar; hardware-key mapping
 ├── Security/
-│   └── KeychainManager.swift     Keychain CRUD with SecAccessControl; LocalAuthentication helpers
+│   ├── KeyStore.swift            KeyStore protocol (store/retrieve/delete by id) + the
+│   │                             `\.keyStore` environment entry, defaulting to KeychainManager.shared
+│   └── KeychainManager.swift     Keychain CRUD with SecAccessControl (conforms to KeyStore);
+│                                 LocalAuthentication helpers
 ├── Settings/
 │   ├── TerminalSettings.swift    AppAppearance, TerminalFont, TerminalTheme, TerminalSettingsStore
 │   └── SettingsView.swift        Appearance + theme pickers with live preview
@@ -49,8 +52,11 @@ simplesshTests/                   Unit-test bundle (Swift Testing), hosted by th
 ├── TerminalEmulatorTests.swift   Grid, cursor, scrollback, alt screen, query replies, split feeds
 ├── PrivateKeyParsingTests.swift  Accepted formats and every rejection path of parsePrivateKey
 ├── HostValidationTests.swift     isValidHost accept/reject tables
-└── Support/TestKeys.swift        Generates Ed25519 (CryptoKit) and RSA (Security) keys at test
-                                  time and serialises them as OpenSSH / PKCS#1 text
+├── SSHManagerTests.swift         connect() against an in-memory KeyStore; render-theme changes
+└── Support/
+    ├── TestKeys.swift            Generates Ed25519 (CryptoKit) and RSA (Security) keys at test
+    │                             time and serialises them as OpenSSH / PKCS#1 text
+    └── InMemoryKeyStore.swift    Dictionary-backed KeyStore
 ```
 
 Xcode uses synchronized root groups for `simplessh/` and `simplesshTests/`, so
@@ -106,9 +112,9 @@ Connect flow:
 connectToServer()
  ├─ if requiresBiometric: KeychainManager.authenticateUserWithPasscode(reason)
  │     LAContext.evaluatePolicy(.deviceOwnerAuthentication)   ← Face ID / passcode
- ├─ sshManager.connect(to:)
+ ├─ sshManager.connect(to:keyStore:)          ← keyStore comes from the view's environment
  │   ├─ terminal.reset(); render
- │   ├─ KeychainManager.retrieveSSHKey(id)   ← SecItemCopyMatching; may prompt again (roadmap C3)
+ │   ├─ keyStore.retrieveSSHKey(id)          ← Keychain SecItemCopyMatching; may prompt again (roadmap C3)
  │   ├─ parsePrivateKey() → SSHAuthenticationMethod (see Key parsing)
  │   ├─ SSHClient.connect(host, port, authenticationMethod, hostKeyValidator: .acceptAnything(), reconnect: .never)
  │   ├─ client.onDisconnect → isConnected = false, "[Connection closed]"
@@ -156,8 +162,11 @@ replaces this with a "session ended" bar).
 Appearance (System/Light/Dark) and theme pickers bound to
 `TerminalSettingsStore`. Every preset uses MesloLGS NF at 14 pt (Oh My Zsh at
 13 pt) so Powerline glyphs render; Custom exposes font family, size slider and
-two `ColorPicker`s. The terminal re-renders on theme change via
-`sshManager.requestRender()`.
+two `ColorPicker`s. `TerminalSettingsStore.renderTheme` snapshots the active
+colours and fonts as an `Equatable` `TerminalRenderTheme`; `SSHTerminalView`
+observes the store and assigns the snapshot to `sshManager.renderTheme`
+whenever it changes (including Custom font/colour edits), which triggers one
+coalesced render. `SSHManager` never reads the settings store.
 
 ## Terminal emulator
 
@@ -204,7 +213,18 @@ is reported by name.
 Roadmap C2 replaces the custom Ed25519 and PKCS#1 code with Citadel's own
 initialisers (which also take a passphrase) and adds ECDSA.
 
-## Keychain
+## Key storage
+
+Views and `SSHManager` reach private keys only through the `KeyStore` protocol
+(`storeSSHKey(_:for:requireBiometric:)`, `retrieveSSHKey(for:)`,
+`deleteSSHKey(for:)`, keyed by the host's UUID string). Views take it from the
+`\.keyStore` environment entry, whose default is `KeychainManager.shared`;
+`SSHTerminalView` passes it into `connect(to:keyStore:)`. Tests inject
+`InMemoryKeyStore`. Biometric helpers (`authenticateUserWithPasscode`,
+`biometricType`, `isBiometricAuthenticationAvailable`) are LocalAuthentication
+wrappers on `KeychainManager` and are still called directly (roadmap C3).
+
+### Keychain
 
 `KeychainManager` stores each key as a `kSecClassGenericPassword` item, service
 `com.simplessh.sshkeys`, account = the host's UUID. With biometrics on, the
@@ -212,8 +232,7 @@ item carries `SecAccessControl(kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
 [.biometryCurrentSet, .or, .devicePasscode])`; otherwise plain
 `WhenUnlockedThisDeviceOnly`. Items are device-only (no iCloud sync). Storing
 deletes any existing item first. `retrieveSSHKey` attaches an `LAContext`, so
-the read itself can prompt; `retrieveSSHKeyWithoutAuth` sets
-`interactionNotAllowed` and is used only by `SSHConnection.hasSSHKey()`.
+the read itself can prompt.
 
 ## Tests
 
@@ -232,6 +251,10 @@ simulator; nothing touches the Keychain, Face ID or the network.
   payloads, a three-byte payload. **No private-key material is committed**; the
   pre-push gate (roadmap B4) rejects PEM blocks.
 - **Host validation** — parameterised accept/reject tables for `isValidHost`.
+- **SSHManager** — `connect(to:keyStore:)` with an `InMemoryKeyStore`: missing
+  key, invalid key, and a valid key that reaches a refused TCP connection on
+  `127.0.0.1:1` (no server involved). Render-theme changes are asserted through
+  `outputVersion` and the fonts in `renderedScreen`.
 
 Run: `xcodebuild … -scheme simplessh -sdk iphonesimulator -destination … test`
 (see `README.md`).

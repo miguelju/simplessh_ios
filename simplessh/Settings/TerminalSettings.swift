@@ -166,6 +166,17 @@ enum TerminalTheme: String, CaseIterable, Identifiable {
     }
 }
 
+/// The colours and fonts the terminal renders with. A value type so
+/// `SSHManager` can hold a copy without observing the settings store, and
+/// `Equatable` so the view can react to any change, including Custom-theme
+/// edits that do not change the theme name.
+struct TerminalRenderTheme: Equatable {
+    var foreground: Color
+    var background: Color
+    var font: Font
+    var boldFont: Font
+}
+
 /// Observable terminal settings persisted via @AppStorage
 @MainActor
 class TerminalSettingsStore: ObservableObject {
@@ -235,5 +246,11 @@ class TerminalSettingsStore: ObservableObject {
 
     var boldFont: Font {
         terminalFont.boldFont(size: CGFloat(fontSize))
+    }
+
+    /// Snapshot of the active colours and fonts for the terminal renderer.
+    var renderTheme: TerminalRenderTheme {
+        TerminalRenderTheme(foreground: foregroundColor, background: backgroundColor,
+                            font: font, boldFont: boldFont)
     }
 }

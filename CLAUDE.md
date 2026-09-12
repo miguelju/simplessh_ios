@@ -48,8 +48,10 @@ Views → managers → data → Citadel. Details and flow diagrams are in
   per-row closure link inside a lazy stack only worked for the first row.
 - **`TerminalTextField`** keeps one space of text and rejects every edit so iOS
   keeps sending backspace events; do not "fix" that.
-- **Private keys live only in the Keychain**, keyed by the host's UUID. Never
-  put key material in SwiftData, logs or test fixtures.
+- **Private keys live only in the Keychain**, keyed by the host's UUID, and
+  are reached only through the `KeyStore` protocol (`\.keyStore` environment
+  entry; `SSHManager.connect(to:keyStore:)`). Never put key material in
+  SwiftData, logs or test fixtures; tests use `InMemoryKeyStore`.
 
 Source folders: `simplessh/{App,Hosts,Terminal,Security,Settings}`. The app
 group is a synchronized folder, so new files need no project edits.

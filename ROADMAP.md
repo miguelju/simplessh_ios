@@ -99,7 +99,7 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   replaces the parsers). The `simplesshUITests` target, which also pointed at
   a deleted folder, was removed.
 
-- [ ] **B2 · Dependency seams** (M)
+- [x] **B2 · Dependency seams** (M)
   Put `KeychainManager` behind a `KeyStore` protocol with an in-memory test
   implementation. Stop `SSHManager.scheduleRender` reading
   `TerminalSettingsStore.shared`; pass a render theme in (the view already
@@ -108,6 +108,12 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   `KeychainManager.shared`; B1's tests use the in-memory store.
   Also drop `SSHConnection.hasSSHKey()` and `retrieveSSHKeyWithoutAuth` — their
   only caller was the migration helper removed in A2.
+  *Done 2026-09-12:* `KeyStore` protocol + `\.keyStore` environment entry
+  (`Security/KeyStore.swift`), `SSHManager.connect(to:keyStore:)`,
+  `SSHManager.renderTheme` (`TerminalRenderTheme` snapshot from the store,
+  assigned by the view on change), `SSHConnection` carries no key logic at all
+  (its three wrappers went with `hasSSHKey`). `SSHManagerTests` run `connect`
+  against `InMemoryKeyStore`; 60 tests green.
 
 - [ ] **B3 · GitHub Actions CI** (M)
   Workflow: build + test on a macOS runner for every PR and push to `main`,

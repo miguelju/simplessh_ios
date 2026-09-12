@@ -13,6 +13,9 @@ import SwiftData
 struct ContentView: View {
     /// Access to SwiftData model context for managing connections
     @Environment(\.modelContext) private var modelContext
+
+    /// Where private keys are stored (Keychain in the app)
+    @Environment(\.keyStore) private var keyStore
     
     /// Query to fetch all saved SSH connections, sorted by last used date
     @Query(sort: \SSHConnection.createdAt, order: .reverse) private var connections: [SSHConnection]
@@ -216,8 +219,8 @@ struct ContentView: View {
     /// - Parameter connection: The connection to delete
     private func deleteConnection(_ connection: SSHConnection) {
         withAnimation {
-            // Delete SSH key from Keychain first
-            connection.deleteSSHKey()
+            // Delete the private key first
+            keyStore.deleteSSHKey(for: connection.id.uuidString)
             
             // Delete connection from SwiftData
             modelContext.delete(connection)
@@ -246,6 +249,9 @@ struct ConnectionRowView: View {
 
     /// Access to model context for deletion
     @Environment(\.modelContext) private var modelContext
+
+    /// Where private keys are stored (Keychain in the app)
+    @Environment(\.keyStore) private var keyStore
     
     var body: some View {
         if isEditMode {
@@ -271,7 +277,7 @@ struct ConnectionRowView: View {
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
                     withAnimation {
-                        connection.deleteSSHKey()
+                        keyStore.deleteSSHKey(for: connection.id.uuidString)
                         modelContext.delete(connection)
                     }
                 } label: {

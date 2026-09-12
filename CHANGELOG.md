@@ -6,6 +6,10 @@ item ids (A1, B3, …) refer to [`ROADMAP.md`](ROADMAP.md).
 ## [Unreleased]
 
 ### Added
+- B2 — `KeyStore` protocol with a `\.keyStore` SwiftUI environment entry
+  (default: the Keychain) and `SSHManagerTests`, which drive `connect` with an
+  in-memory store: missing key, invalid key, valid key reaching a refused
+  localhost connection, and render-theme changes.
 - B1 — `simplesshTests` Swift Testing bundle: terminal emulator (grid, cursor,
   scrollback, alternate screen, DECSTBM, SGR, erase/insert/delete, DSR/DA/OSC
   replies, sequences split across feeds), private-key parsing (OpenSSH Ed25519,
@@ -21,6 +25,12 @@ item ids (A1, B3, …) refer to [`ROADMAP.md`](ROADMAP.md).
   `ecdsa-sha2-nistp256`) instead of "unknown".
 
 ### Changed
+- B2 — `SSHManager` takes its key store as a `connect(to:keyStore:)` parameter
+  and its colours/fonts as a `renderTheme` value; it no longer reads
+  `KeychainManager.shared` or `TerminalSettingsStore.shared`. The terminal
+  now re-renders on Custom-theme font/colour edits, not only on theme name.
+  Views store and delete keys through the environment's key store instead of
+  wrappers on `SSHConnection`.
 - B1 — `SSHManager.parsePrivateKey(_:)` returns a `ParsedPrivateKey` so tests
   can assert on the decoded key; `TerminalEmulator` gained read-only inspection
   accessors (cursor, scroll region, alternate-screen flag, line text).
@@ -33,6 +43,8 @@ item ids (A1, B3, …) refer to [`ROADMAP.md`](ROADMAP.md).
 - A5 — Project builds for iPhone only (was iPhone, iPad and visionOS).
 
 ### Removed
+- B2 — `SSHConnection.storeSSHKey/retrieveSSHKey/deleteSSHKey/hasSSHKey`,
+  `KeychainManager.retrieveSSHKeyWithoutAuth` and `SSHManager.requestRender`.
 - B1 — The `simplesshUITests` target (pointed at a folder that no longer
   existed; no UI tests are planned).
 - A2 — Dead code: `MigrationHelper`, `SSHManager.sendCommand`,
