@@ -282,4 +282,11 @@ SwiftNIO event loops. Keychain calls are synchronous on the main actor today
   `-onlyUsePackageVersionsFromResolvedFile`, no code signing). Path-filtered so
   docs-only changes skip it; the workflow file is in its own trigger paths;
   actions are pinned to commit SHAs; the log and `.xcresult` are uploaded on
-  failure.
+  failure. Repository settings require SHA pinning and allow only
+  GitHub-owned actions.
+- Rulesets: `require-signed-commits` / `require-signed-tags` (verified
+  signatures on `main` and `refs/tags/v*`, no bypass) and `protect-main` /
+  `protect-version-tags` (deletion, non-fast-forward, PR + linear history on
+  `main`; Admin bypass).
+- `hooks/pre-push` is the private-data gate; each clone opts in with
+  `git config core.hooksPath hooks`.

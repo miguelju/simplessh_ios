@@ -75,7 +75,15 @@ group is a synchronized folder, so new files need no project edits.
   `/tmp/simplessh-<item>-commit.txt`, stage, and ask for `git commit -F`. Claude
   pushes and verifies `git log -1 --format=%G?` is `G`. Never `--no-gpg-sign`.
 - **Merges are fast-forwards** (`git merge --ff-only`) so the signed commit is
-  the one on `main`. Claude does not merge; Miguel does.
+  the one on `main`. Claude does not merge; Miguel does. GitHub rulesets
+  enforce it: `main` and `v*` tags require verified signatures with no
+  bypass; PR + linear history on `main` have an Admin bypass for the
+  fast-forward push (an informational "Bypassed rule violations" line).
+- **Pre-push gate:** `hooks/pre-push` (install with
+  `git config core.hooksPath hooks`) blocks a private-key block or a token
+  in the pushed diff. `hooks/pre-push --self-test` checks it. Never
+  `--no-verify`. Actions must be GitHub-owned and SHA-pinned
+  (`sha_pinning_required` is on).
 - **Tick a roadmap box only when the code proves it** (file and symbol named,
   behaviour confirmed, reachable, tested from phase B on, verified in-session).
   Partial work is written down as partial.

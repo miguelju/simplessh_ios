@@ -92,6 +92,14 @@ xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
+After cloning, point git at the repository's hooks so the private-data gate
+runs before every push (it blocks a pasted private key or an API token;
+`hooks/pre-push --self-test` exercises it without pushing):
+
+```bash
+git config core.hooksPath hooks
+```
+
 Continuous integration runs that same test command on GitHub's hosted
 `macos-26` image (Xcode 26.6) for every pull request and push to `main`
 (`.github/workflows/ci.yml`). Changes that touch only Markdown, the licence or
@@ -144,6 +152,13 @@ for now.
 Further reading: [RFC 4251](https://datatracker.ietf.org/doc/html/rfc4251)
 (protocol architecture), [GitHub's SSH guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh),
 [DigitalOcean's key setup tutorial](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-ubuntu-20-04).
+
+## Repository rules
+
+`main` and `v*` tags accept only commits with verified signatures (no bypass
+for anyone), and `main` additionally requires linear history and a pull
+request, with an Admin bypass for signed fast-forward merges. GitHub Actions
+may run only GitHub-owned actions, pinned to commit SHAs.
 
 ## Permissions and entitlements
 

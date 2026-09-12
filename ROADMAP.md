@@ -131,7 +131,7 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   simulator and the other 60 tests fine; artifact uploaded); the second
   commit removed it and its run was green.
 
-- [ ] **B4 · Repo hardening** (S)
+- [x] **B4 · Repo hardening** (S)
   Apply the four rulesets (`protect-main` with Admin bypass,
   `require-signed-commits` with none, and the two `v*` tag equivalents).
   Copy the private-data pre-push hook into `hooks/pre-push`, set
@@ -143,6 +143,12 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   code. The copied hook must anchor the pattern to a header **followed by a
   base64 body line** (or exclude Swift string literals and Markdown) so it
   catches a pasted key without blocking every parser change.
+  *Done 2026-09-12:* four rulesets created via the API (ids 23095164/66/67/68);
+  an unsigned commit created through the Git Data API and pushed at `main`
+  was rejected with HTTP 422 "Commits must have verified signatures";
+  `hooks/pre-push` anchors the PEM check on header + base64 body line and
+  ships a `--self-test` (generated key blocked, header-only text passes,
+  token blocked); `sha_pinning_required` on with GitHub-owned actions only.
   *Done when:* `gh api repos/miguelju/simplessh_ios/rulesets` lists four;
   an unsigned test push to `main` is rejected; the hook blocks a PEM block.
 

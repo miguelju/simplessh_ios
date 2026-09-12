@@ -6,6 +6,10 @@ item ids (A1, B3, …) refer to [`ROADMAP.md`](ROADMAP.md).
 ## [Unreleased]
 
 ### Added
+- B4 — Repository hardening: rulesets requiring verified signatures on
+  `main` and `v*` tags (no bypass) plus PR / linear-history / no-force-push
+  protection (Admin bypass); `hooks/pre-push` private-data gate with a
+  `--self-test`; Actions restricted to GitHub-owned, SHA-pinned actions.
 - B3 — GitHub Actions workflow: build and test on the hosted `macos-26` image
   (Xcode 26.6, iPhone 17 simulator) for every PR and push to `main`,
   path-filtered so docs-only changes skip it, actions SHA-pinned, log and

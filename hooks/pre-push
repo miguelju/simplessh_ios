@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Pre-push private-data gate for simplessh_ios (roadmap B4).
+#
+# Blocks a push whose changes against origin/main add credential-looking
+# content: a private-key block, or a cloud / GitHub / 1Password / Tailscale /
+# Slack token. A private-key block is recognised as an added PEM header line
+# followed by an added base64 body line, so the app's own key parser, the
+# docs and the test helper may mention the header text without tripping it.
+#
+# Install once per clone:   git config core.hooksPath hooks
+# Self-test (no push):      hooks/pre-push --self-test
+# Never bypass with --no-verify; fix the diff instead.
+set -euo pipefail
+
+# Reads a unified diff on stdin. Returns 0 when clean, 1 on a match.
+scan() {
+    local diff
+    diff="$(cat)"
+    [ -z "$diff" ] && return 0
+
+    if printf '%s\n' "$diff" | awk '
+        /^\+.*-----BEGIN (RSA |EC |OPENSSH |DSA |ENCRYPTED )?PRIVATE KEY-----/ { armed = 1; next }
+        armed && /^\+[A-Za-z0-9+\/=]+[[:space:]]*$/ && length($0) > 40 { found = 1; exit }
+        { armed = 0 }
+        END { exit found ? 0 : 1 }'; then
+        echo "ABORT pre-push: the diff adds a private-key block" >&2
+        return 1
+    fi
+
+    local patterns=(
+        'aws_secret_access_key'
+        'aws_access_key_id[^A-Z0-9]*AKIA[A-Z0-9]{16}'
+        '(ghp|gho|ghs|ghu|ghr)_[A-Za-z0-9]{36,}'
+        'ops_[A-Za-z0-9_-]{30,}'
+        'tskey-[a-z]+-[A-Za-z0-9-]{30,}'
+        'xox[bpoars]-[0-9]+-[0-9]+-[A-Za-z0-9]{20,}'
+    )
+    local pat
+    for pat in "${patterns[@]}"; do
+        if printf '%s\n' "$diff" | grep -qE "$pat"; then
+            echo "ABORT pre-push: the diff matches credential pattern: $pat" >&2
+            return 1
+        fi
+    done
+    return 0
+}
+
+if [ "${1:-}" = "--self-test" ]; then
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    ssh-keygen -q -t ed25519 -N '' -C 'simplessh-prepush-selftest' -f "$tmp/key"
+    fail() { echo "self-test FAILED: $1" >&2; exit 1; }
+
+    # 1. A pasted private key must be blocked.
+    if { echo '+++ b/pasted.txt'; sed 's/^/+/' "$tmp/key"; } | scan 2>/dev/null; then
+        fail "a generated private key was not blocked"
+    fi
+    # 2. Header text in code, docs and the test helper must pass.
+    printf '%s\n' \
+        '+++ b/simplessh/Terminal/SSHManager.swift' \
+        '+        if trimmed.hasPrefix("-----BEGIN OPENSSH PRIVATE KEY-----") {' \
+        '+            let keyData = try pemToDER(trimmed)' \
+        '+| `-----BEGIN RSA PRIVATE KEY-----` | PEM → DER, minimal ASN.1 walk |' \
+        '+        "-----BEGIN \(label)-----\n\(body)\n-----END \(label)-----\n"' \
+        | scan || fail "header text without a body was blocked"
+    # 3. A token must be blocked.
+    if echo '+token = ghp_0123456789abcdefghijklmnopqrstuvwxyzAB' | scan 2>/dev/null; then
+        fail "a GitHub token was not blocked"
+    fi
+    echo "pre-push self-test passed"
+    exit 0
+fi
+
+# Real run. Diff the commits being pushed against origin/main from their
+# merge base; the hook itself is excluded so its pattern list cannot
+# self-match.
+if git rev-parse --verify --quiet origin/main >/dev/null; then
+    git diff origin/main...HEAD -- . ':(exclude)hooks/' | scan
+else
+    git diff --cached -- . ':(exclude)hooks/' | scan
+fi
