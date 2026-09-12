@@ -1,254 +1,163 @@
-# Simple SSH - iPhone SSH Terminal Client
+# Simple SSH — iPhone SSH Terminal Client
 
-A modern SSH client for iPhone, built with SwiftUI and Liquid Glass design principles. Connect to remote servers, manage SSH connections, and run commands in a full interactive terminal — all from your iPhone.
+A key-based SSH client for iPhone, built with SwiftUI, SwiftData and
+[Citadel](https://github.com/orlandos-nl/Citadel) (pure-Swift SSH on SwiftNIO).
+Save hosts, keep the private keys in the Keychain behind Face ID, and work in a
+live VT100/xterm terminal.
 
-## Overview
-
-Simple SSH is an iPhone app that provides a full-featured SSH terminal — connect to remote servers, execute commands in a live interactive shell, and manage multiple SSH connections. Designed exclusively for iPhone, it uses Apple's Liquid Glass design language and the Citadel SSH library for secure, key-based authentication.
+Developed with Xcode's Claude agent as an example of AI-assisted iOS work. The
+current plan of record is [`ROADMAP.md`](ROADMAP.md); how the app is built is in
+[`ARCHITECTURE.md`](ARCHITECTURE.md); changes are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Features
 
-### Liquid Glass Design
-- Modern Material Effects with `.glassEffect()` modifier
-- Interactive glass effects responsive to touch
-- Color-tinted glass for visual hierarchy
-- Smooth animations and fluid transitions
+**Hosts**
+- Save any number of hosts (name, hostname or IP, username, port).
+- Edit via the toolbar ⋯ menu → Edit, or long-press → Edit. Swipe to delete.
+- Private keys live only in the iOS Keychain (device-only, hardware-encrypted),
+  never in SwiftData. Optional Face ID / Touch ID gate per host, with passcode
+  fallback.
+- Keys are auto-detected: OpenSSH Ed25519, OpenSSH RSA, PEM PKCS#1 RSA. Keys
+  must not have a passphrase (see roadmap item C2).
 
-### SSH Connection Management
-- Save multiple SSH server configurations
-- Edit existing connections (via toolbar edit mode or long-press context menu)
-- Secure key storage in iOS Keychain (not in SwiftData)
-- Biometric authentication (Face ID / Touch ID) for key access
-- Connection details: hostname, username, SSH key (Ed25519 or RSA, OpenSSH or PEM format), port
+**Terminal**
+- Interactive PTY shell (`xterm-256color`) with a stateful VT100/xterm emulator:
+  cursor control, erase/insert/delete, scroll regions, bounded scrollback, and
+  an alternate screen so `vim`, `htop`, `less` and `clear` behave.
+- 16 / 256 / 24-bit colour; bold, dim, italic, underline, reverse, strikethrough.
+- Oh My Zsh / Powerlevel10k prompts render, including Nerd Font glyphs (the
+  MesloLGS NF font is bundled). Terminal queries (DSR, DA, XTWINOPS) are answered
+  so prompts that probe the terminal draw immediately.
+- Every keystroke goes straight to the PTY. A toolbar above the keyboard adds
+  esc, tab, ctrl, arrows and common shell characters; hardware keyboards get
+  arrows, function keys and ctrl-combinations.
+- Typing `exit` closes the session and returns to the host list.
 
-### Real SSH Terminal
-- Live terminal connected to remote SSH servers via Citadel (SwiftNIO SSH)
-- Real-time output streaming via PTY (pseudo-terminal)
-- Full ANSI color rendering (16, 256, and 24-bit true color)
-- Styled text: bold, dim, italic, underline, reverse, strikethrough
-- Oh My Zsh compatible — renders themed prompts, git status indicators, and Powerline symbols
-- Direct keystroke input to PTY (real terminal experience)
-- Special keys toolbar (ESC, TAB, CTRL, arrows) for software keyboard
-- Typing `exit` closes the SSH session and returns to the connection list
-- Connection status indicators
-
-### Dark Mode Support
-- Three appearance modes: **System** (follows device setting), **Light**, and **Dark**
-- When set to **System**, the app automatically adapts to your device's appearance setting
-- Adaptive color palette: clean, subtle UI in light mode; vibrant gradient and glass effects in dark mode
-- Configurable in Settings — your preference is saved across app launches
-- Terminal view is independent — it always uses its own theme colors
-
-### Customizable Terminal Themes
-- 7 built-in themes, each bundling font, size, and colors: Classic Green, Amber, Cyan, White, Solarized, Dracula, Oh My Zsh
-- Oh My Zsh theme optimized for rendering Oh My Zsh shell configurations
-- Custom theme with full control over font family, size, and colors
-- Live preview in settings
-- Preferences persist across app launches
+**Appearance**
+- System / Light / Dark mode for the app chrome.
+- Seven terminal themes (Classic Green, Amber, Cyan, White, Solarized, Dracula,
+  Oh My Zsh) plus a Custom theme with your own font, size and colours. Live
+  preview in Settings. All preferences persist.
 
 ## Screenshots
 
-### Light Mode
-
-| Connection List (Empty) | Connection List | Add Connection |
+| Host list (empty) | Host list | Add host |
 |:-:|:-:|:-:|
 | ![Empty](simplessh/screenshots/connection_list_empty.png) | ![Populated](simplessh/screenshots/connection_list_populated.png) | ![Add](simplessh/screenshots/add_connection.png) |
 
-| Settings | SSH Terminal |
-|:-:|:-:|
-| ![Settings](simplessh/screenshots/settings_view.png) | ![Terminal](simplessh/screenshots/terminal_view.png) |
+| Settings | Terminal | Host list (dark) | Settings (dark) |
+|:-:|:-:|:-:|:-:|
+| ![Settings](simplessh/screenshots/settings_view.png) | ![Terminal](simplessh/screenshots/terminal_view.png) | ![Dark](simplessh/screenshots/connection_list_dark.png) | ![Settings dark](simplessh/screenshots/settings_view_dark.png) |
 
-### Dark Mode
+## Requirements
 
-| Connection List | Settings |
-|:-:|:-:|
-| ![Connections Dark](simplessh/screenshots/connection_list_dark.png) | ![Settings Dark](simplessh/screenshots/settings_view_dark.png) |
-
-## Architecture
-
-### Data Models
-- **SSHConnection**: SwiftData model storing connection configuration (metadata only — keys in Keychain)
-
-### Views
-- **ContentView**: Main list showing all saved connections with swipe-to-delete, edit mode, and context menus
-- **AddConnectionView**: Form for creating and editing connections with validation and biometric toggle
-- **SSHTerminalView**: Production terminal with real SSH via Citadel
-- **SettingsView**: Appearance mode (System/Light/Dark) and terminal theme customization with live preview
-
-### Managers
-- **SSHManager**: SSH connection lifecycle, PTY shell sessions, command execution — all async/await
-- **KeychainManager**: Secure key storage, biometric authentication, access control
-
-### Utilities
-- **ANSIParser**: Converts ANSI escape codes to styled `AttributedString` for terminal rendering (colors, bold, italic, underline, 256-color, true color)
-- **TerminalSettingsStore**: Persists terminal appearance preferences (font, size, colors) via `@AppStorage`
-
-### SSH Library
-- **Citadel** (Swift Package Manager): Pure Swift SSH client built on SwiftNIO SSH
-- Supports modern key exchange algorithms (curve25519-sha256, etc.)
-- No Objective-C bridging required — fully native Swift
-
-## How SSH Key Authentication Works
-
-SSH (Secure Shell) supports two primary authentication methods: **password** and **public key**. This app exclusively uses **public key authentication**, which is the recommended and more secure approach.
-
-### Why Keys Instead of Passwords?
-
-Password authentication is vulnerable to brute-force attacks, credential stuffing, and phishing. Most security-conscious server administrators disable password authentication entirely. The [OpenSSH project](https://www.openssh.com/) and major hosting providers (AWS, GitHub, DigitalOcean) all recommend or require key-based authentication.
-
-> **This app does not support password authentication by design.** You must use an SSH key pair to connect.
-
-### How Public Key Authentication Works
-
-1. **Key pair generation**: You generate a key pair on your local machine — a **private key** (secret, never shared) and a **public key** (placed on the server).
-2. **Server configuration**: The public key is added to `~/.ssh/authorized_keys` on the remote server.
-3. **Authentication handshake**: When connecting, the client proves it holds the private key by signing a challenge from the server. The server verifies the signature using the stored public key. The private key never leaves the client device.
-
-This is based on asymmetric cryptography (also called public-key cryptography). For a detailed explanation, see:
-- [OpenSSH Manual — ssh-keygen](https://man.openbsd.org/ssh-keygen.1) — official documentation for generating key pairs
-- [SSH Protocol Architecture — RFC 4251](https://datatracker.ietf.org/doc/html/rfc4251) — the SSH protocol specification
-- [Public Key Authentication — RFC 4252 Section 7](https://datatracker.ietf.org/doc/html/rfc4252#section-7) — the authentication protocol specification
-
-### Generating an SSH Key Pair
-
-```bash
-# Ed25519 (recommended — fast, secure, compact)
-ssh-keygen -t ed25519 -C "your_email@example.com"
-
-# RSA (widely compatible — use 4096 bits minimum)
-ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-```
-
-This creates two files (default locations):
-- `~/.ssh/id_ed25519` (private key) — paste this into the app
-- `~/.ssh/id_ed25519.pub` (public key) — add this to the server
-
-### Installing the Public Key on the Server
-
-```bash
-# Copy public key to the remote server
-ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server_ip
-
-# Or manually append to authorized_keys
-cat ~/.ssh/id_ed25519.pub | ssh user@server_ip "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
-```
-
-### Tested Key Formats
-
-This app was tested with the following SSH key types and formats:
-
-| Format | Header | Algorithm | Status |
-|---|---|---|---|
-| OpenSSH Ed25519 | `-----BEGIN OPENSSH PRIVATE KEY-----` | ssh-ed25519 | Tested |
-| OpenSSH RSA | `-----BEGIN OPENSSH PRIVATE KEY-----` | ssh-rsa | Tested |
-| PEM RSA (PKCS#1) | `-----BEGIN RSA PRIVATE KEY-----` | RSA | Tested |
-
-The key format is auto-detected from the file content. **Encrypted (passphrase-protected) keys are not supported** — the private key must have no passphrase.
-
-### References
-
-- [OpenSSH](https://www.openssh.com/) — the most widely used SSH implementation
-- [SSH Protocol Architecture — RFC 4251](https://datatracker.ietf.org/doc/html/rfc4251)
-- [SSH Authentication Protocol — RFC 4252](https://datatracker.ietf.org/doc/html/rfc4252)
-- [GitHub: Connecting with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) — practical guide to SSH key setup
-- [DigitalOcean: How to Set Up SSH Keys](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-ubuntu-20-04) — step-by-step tutorial
-
-## Documentation
-
-Detailed documentation is available inside the [`simplessh/`](simplessh/) directory:
-
-| Document | Description |
+| | |
 |---|---|
-| [Quick Start Guide](simplessh/QUICK_START.md) | 5-minute setup guide — get the app running on your device step by step |
-| [App Flow](simplessh/APP_FLOW.md) | Application flow diagrams — how screens connect and data moves through the app |
-| [File Structure](simplessh/FILE_STRUCTURE.md) | Complete file listing with architecture layers and file descriptions |
-| [Implementation Summary](simplessh/IMPLEMENTATION_SUMMARY.md) | Feature summary, architecture overview, threading model, and dependencies |
-| [Production Implementation Guide](simplessh/PRODUCTION_IMPLEMENTATION_GUIDE.md) | Detailed technical guide — SSH key parsing, Keychain security, error handling, and troubleshooting |
-| [Project README](simplessh/README.md) | Inner project overview with feature list and requirements |
+| Xcode | 26.x (the UI uses the iOS 26 `glassEffect` APIs) |
+| Deployment target | iOS 26.2, iPhone only |
+| Language | Swift 5 language mode with approachable concurrency; the module defaults to `MainActor` isolation |
+| Device | A physical iPhone for anything real: Keychain, Face ID and SSH connectivity are limited or absent in the simulator |
+| Account | A free Apple Developer account is enough for device builds |
 
-## Important Notes
-
-### Security
-- SSH keys stored in iOS Keychain (hardware-encrypted, device-only)
-- Biometric authentication (Face ID/Touch ID) with passcode fallback
-- Keys never stored in SwiftData or plaintext
-- Automatic Keychain cleanup on connection deletion
-
-### Network Permissions
-- `NSLocalNetworkUsageDescription` — required for local network SSH connections
-- `NSFaceIDUsageDescription` — required for biometric key access
-- App Sandbox entitlement `com.apple.security.network.client` — required for outgoing TCP connections
-
-## Getting Started
-
-### Prerequisites
-
-- **Xcode 26.0 beta or later** — required for Liquid Glass APIs (`.glassEffect()`) and iOS 26 SDK
-- **Xcode 26.3 or later** — required if you want to use coding agents (Claude Agent, OpenAI Codex) in Xcode. See [Meet agentic coding in Xcode](https://developer.apple.com/videos/play/tech-talks/111428/) on Apple Developer.
-- iOS 17.0 or later (deployment target)
-- Swift 6.0
-- Apple Developer account (free account works for device testing)
-- Real device recommended (Keychain, Face ID, and SSH connectivity require a physical device)
-
-### Clone and Build
+## Quick start
 
 ```bash
-# Clone the repository
 git clone https://github.com/miguelju/simplessh_ios.git
 cd simplessh_ios
-
-# Open the project in Xcode
 open simplessh.xcodeproj
 ```
 
-Xcode will automatically resolve Swift Package Manager dependencies on first open. Then:
+1. Xcode resolves the Swift packages on first open (pinned by the committed
+   `Package.resolved`). If it does not: **File ▸ Packages ▸ Resolve Package Versions**.
+2. Set your team under **Signing & Capabilities** for the `simplessh` target.
+3. Select your iPhone and press **⌘R**.
+4. Tap **+**, fill in the host, paste a private key, choose whether to require
+   Face ID, and save.
+5. Tap the host. Authenticate if asked, and the shell appears.
 
-1. Select your target device (physical iPhone recommended) or simulator
-2. Set your development team in **Signing & Capabilities** (Project > simplessh target > Signing & Capabilities)
-3. Press **Cmd+R** to build and run
-
-### Command-line Build (optional)
+Command line:
 
 ```bash
-# Build for device
+# Device build
 xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphoneos build
 
-# Build for simulator
-xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' build
+# Simulator build
+xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
 ```
+
+### Common issues
+
+| Symptom | Cause / fix |
+|---|---|
+| `No such module 'Citadel'` | Packages still resolving. **File ▸ Packages ▸ Resolve Package Versions**, or Reset Package Caches, then clean build. |
+| Face ID never prompts | Simulator, or Face ID not enrolled. Use a device. |
+| Connection timeout | Server not reachable from the phone's network, sshd not running, or firewall. Try `ssh user@host` from a laptop on the same network first. |
+| Authentication failed | Public key not in the server's `authorized_keys`, wrong username, or a passphrase-protected key (not supported yet, roadmap C2). |
+| Host key never checked | Known gap: the client currently accepts any host key. Roadmap item C1 adds trust-on-first-use verification. |
+
+## SSH key authentication
+
+The app supports **public-key authentication only**; password login is
+deliberately unsupported. Password auth is exposed to brute force and
+credential stuffing, and most hardened servers disable it. See
+[RFC 4252 §7](https://datatracker.ietf.org/doc/html/rfc4252#section-7) and the
+[OpenSSH manual](https://man.openbsd.org/ssh-keygen.1).
+
+Generate a pair on your computer (Ed25519 is recommended; RSA ≥ 4096 bits if you
+must):
+
+```bash
+ssh-keygen -t ed25519 -C "you@example.com"        # ~/.ssh/id_ed25519 + .pub
+ssh-keygen -t rsa -b 4096 -C "you@example.com"    # RSA alternative
+```
+
+Install the **public** key on the server, then paste the **private** key file,
+header and footer included, into the app:
+
+```bash
+ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server
+# or
+cat ~/.ssh/id_ed25519.pub | ssh user@server 'mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys'
+```
+
+| Format | Header | Algorithm |
+|---|---|---|
+| OpenSSH Ed25519 | `-----BEGIN OPENSSH PRIVATE KEY-----` | ssh-ed25519 |
+| OpenSSH RSA | `-----BEGIN OPENSSH PRIVATE KEY-----` | ssh-rsa |
+| PEM PKCS#1 RSA | `-----BEGIN RSA PRIVATE KEY-----` | RSA |
+
+The format is detected from the content. Passphrase-protected keys are rejected
+for now.
+
+Further reading: [RFC 4251](https://datatracker.ietf.org/doc/html/rfc4251)
+(protocol architecture), [GitHub's SSH guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh),
+[DigitalOcean's key setup tutorial](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys-on-ubuntu-20-04).
+
+## Permissions and entitlements
+
+- `NSFaceIDUsageDescription` and `NSLocalNetworkUsageDescription` are set through
+  `INFOPLIST_KEY_` build settings (the Info.plist is generated).
+- `NSBonjourServices` lists `_ssh._tcp.` for local-network discovery permission.
+- `simplessh/simplessh.entitlements`: App Sandbox and `network.client` (outgoing TCP).
 
 ## Dependencies
 
-All dependencies are managed via Swift Package Manager and resolve automatically when you open the project in Xcode.
+Managed by Swift Package Manager and pinned by `Package.resolved`.
 
-### Direct Dependency
-
-| Library | Version | License | Description |
+| Library | Version | License | Role |
 |---|---|---|---|
-| [Citadel](https://github.com/orlandos-nl/Citadel) | 0.9.2 | MIT | Pure Swift SSH client built on SwiftNIO SSH |
-
-### Transitive Dependencies (pulled in by Citadel)
-
-| Library | Version | License | Description |
-|---|---|---|---|
-| [swift-nio-ssh](https://github.com/Joannis/swift-nio-ssh) | 0.3.5 | Apache 2.0 | SSH protocol implementation (Citadel fork) |
-| [swift-nio](https://github.com/apple/swift-nio) | 2.101.2 | Apache 2.0 | Event-driven network framework (Apple) |
-| [swift-crypto](https://github.com/apple/swift-crypto) | 2.0.5 | Apache 2.0 | Cryptographic operations (Apple) |
-| [BigInt](https://github.com/attaswift/BigInt) | 5.7.0 | MIT | Large number arithmetic for RSA |
-| [swift-log](https://github.com/apple/swift-log) | 1.14.0 | Apache 2.0 | Logging framework (Apple) |
-| [swift-atomics](https://github.com/apple/swift-atomics) | 1.3.1 | Apache 2.0 | Atomic operations (Apple) |
-| [swift-collections](https://github.com/apple/swift-collections) | 1.6.0 | Apache 2.0 | Data structure extensions (Apple) |
-| [swift-system](https://github.com/apple/swift-system) | 1.7.2 | Apache 2.0 | System interfaces (Apple) |
-| [ColorizeSwift](https://github.com/mtynior/ColorizeSwift) | 1.7.0 | MIT | Terminal string colorization |
-
-## Development
-
-This application was developed using **Xcode Coding Assistant with Claude Agent** (Anthropic) as an educational example of AI-assisted iOS app development. It demonstrates what can be built using agentic coding tools directly within Xcode.
-
-For more information on coding agents in Xcode, see:
-- [Meet agentic coding in Xcode](https://developer.apple.com/videos/play/tech-talks/111428/) — Apple Tech Talk
-- [Experiment with coding intelligence in Xcode 26](https://developer.apple.com/forums/thread/815576) — Apple Developer Forums
+| [Citadel](https://github.com/orlandos-nl/Citadel) | 0.9.2 | MIT | SSH client (direct dependency) |
+| [swift-nio-ssh](https://github.com/Joannis/swift-nio-ssh) | 0.3.5 | Apache 2.0 | SSH protocol (Citadel's fork) |
+| [swift-nio](https://github.com/apple/swift-nio) | 2.101.2 | Apache 2.0 | Event-driven networking |
+| [swift-crypto](https://github.com/apple/swift-crypto) | 2.0.5 | Apache 2.0 | Cryptography |
+| [BigInt](https://github.com/attaswift/BigInt) | 5.7.0 | MIT | RSA arithmetic |
+| [swift-log](https://github.com/apple/swift-log) | 1.14.0 | Apache 2.0 | Logging |
+| [swift-atomics](https://github.com/apple/swift-atomics) | 1.3.1 | Apache 2.0 | Atomics |
+| [swift-collections](https://github.com/apple/swift-collections) | 1.6.0 | Apache 2.0 | Data structures |
+| [swift-system](https://github.com/apple/swift-system) | 1.7.2 | Apache 2.0 | System interfaces |
+| [ColorizeSwift](https://github.com/mtynior/ColorizeSwift) | 1.7.0 | MIT | Terminal string colouring |
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+[MIT](LICENSE).

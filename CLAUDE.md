@@ -1,81 +1,78 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository.
 
-## Project Overview
+## Project overview
 
-iOS SSH client app built with SwiftUI, SwiftData, and Citadel (pure Swift SSH library via Swift Package Manager). Targets iOS 17.0+. Uses Swift 6.0.
+iPhone-only SSH client: SwiftUI + SwiftData + Citadel (pure-Swift SSH over
+SwiftNIO). Deployment target **iOS 26.2** (the UI uses `glassEffect`). Swift 5
+language mode with approachable concurrency; the module defaults to `MainActor`
+isolation. Xcode 26.x.
 
-## Build & Run
+Plan of record: `ROADMAP.md` (phases A–E, one item per PR). How things work:
+`ARCHITECTURE.md`. Changes: `CHANGELOG.md`.
+
+## Build and test
 
 ```bash
-# Open project
 open simplessh.xcodeproj
 
-# Build from command line (SPM packages resolve automatically)
-xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphoneos build
+# Simulator build (what CI runs)
+xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
 
-# Run tests
-xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' test
+# Tests (target exists; sources arrive with roadmap item B1)
+xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-Face ID, Keychain, and SSH connectivity require a real device — simulator has limited functionality.
+Packages are pinned by the committed `Package.resolved`. Keychain, Face ID and
+SSH connectivity need a physical device; the simulator only proves it compiles.
 
-## Architecture
+## Architecture in one screen
 
-**Layered design: Views → Managers → Data Model → Citadel (SwiftNIO SSH)**
+Views → managers → data → Citadel. Details and flow diagrams are in
+`ARCHITECTURE.md`; the traps worth knowing before editing:
 
-- **SSHManager** (`@MainActor`): Wraps Citadel's `SSHClient` for SSH sessions and interactive PTY shells. Uses Swift async/await for all SSH operations. Terminal I/O is streamed via `TTYStdinWriter` (input) and `AsyncSequence` (output). Owns a `TerminalEmulator`, feeds it raw PTY bytes, writes back any query replies it produces, and publishes the rendered screen as `@Published renderedScreen: AttributedString` (the view shows it directly). **Rendering is coalesced** via `scheduleRender()` — many `feed` calls in one run-loop hop collapse into a single render + one `outputVersion` bump. This avoids the "onChange tried to update multiple times per frame" trap (rendering inside a high-frequency `onChange` made SwiftUI drop renders, so the shell prompt sometimes didn't appear until the next keystroke).
-- **TerminalEmulator** (`final class`): A stateful, incremental VT100/xterm emulator (replaces the old one-shot `ANSIParser`). Maintains a live 80×24 screen grid, cursor, scroll region, SGR state, bounded scrollback (2000 lines), and an alternate-screen buffer — fed bytes via `feed(_:)` as they arrive (a persistent parser state machine handles escape sequences split across reads). Handles CR/LF/BS/TAB, cursor moves (`CUU/CUD/CUF/CUB/CHA/VPA/CUP`), erase (`ED/EL/ECH`), insert/delete lines & chars (`IL/DL/ICH/DCH`), scroll regions (`DECSTBM`), save/restore cursor, and alt-screen toggles (`?1049/?47/?1047`) so full-screen apps (vim, htop, less, `clear`) render and the shell scrollback is restored on exit. Iterates input by **Unicode scalar, not Character** (Swift merges `\r\n` into one grapheme, which would defeat CR/LF handling). Replies to terminal queries — DSR (`ESC[5n`/`ESC[6n`) and DA (`ESC[c`) — via `drainReply()`, which `SSHManager` writes back to the PTY; without this, prompts that probe the terminal (Powerlevel10k instant prompt, gitstatus) may not draw until the first keystroke. `render(...)` produces a styled `AttributedString` (16/256/true color, bold/dim/italic/underline/reverse/strikethrough), resolving defaults + reverse video and trimming trailing blanks. This fixed the stray-`%` and prompt-not-visible-until-typing bugs at the source.
-- **TerminalSettingsStore** (`@MainActor`, singleton): Persists terminal appearance preferences via `@AppStorage`. Stores selected theme (7 built-in presets + Custom) that bundles font family, font size, foreground color, and background color. Custom theme allows independent control of all settings. Used by `ANSIParser`, `SSHTerminalView`, and `SettingsView`.
-- **KeychainManager** (singleton): Stores SSH private keys in iOS Keychain with optional biometric (`SecAccessControl`) protection. Keys are never stored in SwiftData.
-- **SSHConnection** (SwiftData `@Model`): Persists connection metadata (name, host, username, port). Delegates key storage/retrieval to `KeychainManager`.
+- **`SSHManager`** (`@MainActor`) owns the Citadel client, the PTY shell task
+  and a `TerminalEmulator`. Rendering is **coalesced** through `scheduleRender()`
+  into one `renderedScreen` update and one `outputVersion` bump per run-loop
+  hop. Rendering from a high-frequency `onChange` made SwiftUI drop frames and
+  hid the prompt until the next keystroke. Keep it coalesced.
+- **`TerminalEmulator`** iterates **Unicode scalars, not Characters** (Swift
+  merges `\r\n` into one grapheme). It queues replies to DSR/DA/XTWINOPS/OSC
+  queries that `SSHManager` must write back via `drainReply()`; prompts such as
+  Powerlevel10k block until they get them.
+- **`ContentView`** uses a `List` (swipe actions need one) and value-based
+  `NavigationLink` with a single stack-level `navigationDestination`; a
+  per-row closure link inside a lazy stack only worked for the first row.
+- **`TerminalTextField`** keeps one space of text and rejects every edit so iOS
+  keeps sending backspace events; do not "fix" that.
+- **Private keys live only in the Keychain**, keyed by the host's UUID. Never
+  put key material in SwiftData, logs or test fixtures.
 
-**Views:**
-- `ContentView` — connection list with swipe-to-delete, settings access
-- `AddConnectionView` — connection creation form with validation
-- `SSHTerminalView` — live SSH terminal with biometric auth prompt, direct keystroke input, settings access
-- `TerminalKeyboardView` — UIKeyInput-based keyboard capture (UIViewRepresentable) with special keys toolbar
-- `SettingsView` — terminal theme selection (7 presets + custom) with live preview
+Source folders: `simplessh/{App,Hosts,Terminal,Security,Settings}`. The app
+group is a synchronized folder, so new files need no project edits.
 
-**SSH Library:** Citadel (SPM) — pure Swift SSH client built on Apple's SwiftNIO SSH. Supports modern key exchange algorithms (curve25519-sha256, diffie-hellman-group14-sha256, etc.). No Objective-C bridging required.
+## Key constraints
 
-## Required Info.plist Entries
+- Supported private keys: OpenSSH Ed25519, OpenSSH RSA, PEM PKCS#1 RSA, no
+  passphrase. Type is detected from content. (C2 adds passphrases and ECDSA.)
+- Host keys are currently accepted blindly (`.acceptAnything()`); C1 fixes it.
+- No password authentication, by design.
+- Info.plist is generated: usage strings are `INFOPLIST_KEY_` build settings.
 
-These are configured via `INFOPLIST_KEY_` build settings in the Xcode project (auto-generated Info.plist):
+## Working conventions
 
-- `NSFaceIDUsageDescription` — "Authenticate to access SSH keys"
-- `NSLocalNetworkUsageDescription` — "Connect to SSH servers on your local network"
-
-## Entitlements
-
-`simplessh/simplessh.entitlements` includes:
-- `com.apple.security.app-sandbox` — App Sandbox enabled
-- `com.apple.security.network.client` — Outgoing network connections (required for SSH)
-
-## Key Constraints
-
-- SSH keys are supported in three formats:
-  - **OpenSSH Ed25519**: `-----BEGIN OPENSSH PRIVATE KEY-----` (ssh-ed25519) — parsed via custom OpenSSH binary format parser, extracts 32-byte seed for `Curve25519.Signing.PrivateKey`
-  - **OpenSSH RSA**: `-----BEGIN OPENSSH PRIVATE KEY-----` (ssh-rsa) — handled natively by Citadel's `init(sshRsa:)`
-  - **PEM RSA (PKCS#1)**: `-----BEGIN RSA PRIVATE KEY-----` — parsed via custom ASN.1 DER parser, extracts modulus/exponents for `Insecure.RSA.PrivateKey`
-- Key type is auto-detected from the file content; the correct Citadel authentication method (`.ed25519()` or `.rsa()`) is selected automatically
-- Encrypted private keys are not supported (key must have no passphrase)
-- No bridging header — Citadel is pure Swift
-
-## Dependencies (Swift Package Manager)
-
-- **Citadel** (0.9.x) — SSH client library (brings in SwiftNIO SSH, swift-crypto, BigInt, swift-log)
-
-## Documentation Policy
-
-After any major code change (adding/removing files, changing architecture, adding features, modifying data flow, or changing dependencies), update the relevant documentation files:
-
-- `simplessh/APP_FLOW.md` — Application flow diagrams and screen descriptions
-- `simplessh/FILE_STRUCTURE.md` — File listing and architecture layers
-- `simplessh/IMPLEMENTATION_SUMMARY.md` — Feature summary and architecture overview
-- `simplessh/README.md` — Project overview, features, and requirements
-- `simplessh/QUICK_START.md` — Setup guide and troubleshooting
-- `simplessh/PRODUCTION_IMPLEMENTATION_GUIDE.md` — Detailed technical guide
-
-Only update docs that are affected by the change. Keep documentation concise and accurate.
+- **One roadmap item = one PR**, branched from the previous item's branch when
+  they touch the same files so merges stay fast-forwards.
+- **Commits are YubiKey-signed by Miguel.** Write the message to
+  `/tmp/simplessh-<item>-commit.txt`, stage, and ask for `git commit -F`. Claude
+  pushes and verifies `git log -1 --format=%G?` is `G`. Never `--no-gpg-sign`.
+- **Merges are fast-forwards** (`git merge --ff-only`) so the signed commit is
+  the one on `main`. Claude does not merge; Miguel does.
+- **Tick a roadmap box only when the code proves it** (file and symbol named,
+  behaviour confirmed, reachable, tested from phase B on, verified in-session).
+  Partial work is written down as partial.
+- Every PR updates the docs it affects: `README.md` for user-facing behaviour,
+  `ARCHITECTURE.md` for structure or data flow, `CHANGELOG.md` always.

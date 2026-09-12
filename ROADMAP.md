@@ -52,7 +52,7 @@ Mechanical cleanups that make every later diff smaller and reviews faster.
   so every machine and CI resolve identical dependency versions.
   *Done when:* `git ls-files | grep Package.resolved` is non-empty.
 
-- [ ] **A4 · Consolidate documentation** (M)
+- [x] **A4 · Consolidate documentation** (M)
   Collapse `simplessh/{README,APP_FLOW,FILE_STRUCTURE,IMPLEMENTATION_SUMMARY,
   PRODUCTION_IMPLEMENTATION_GUIDE,QUICK_START}.md` into three root files:
   `README.md` (overview, screenshots, SSH-key guide, quick start),
@@ -100,6 +100,8 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   observes the store). Inject the key store into `SSHManager.connect`.
   *Done when:* `SSHManager` and `SSHConnection` have no direct reference to
   `KeychainManager.shared`; B1's tests use the in-memory store.
+  Also drop `SSHConnection.hasSSHKey()` and `retrieveSSHKeyWithoutAuth` — their
+  only caller was the migration helper removed in A2.
 
 - [ ] **B3 · GitHub Actions CI** (M)
   Workflow: build + test on a macOS runner for every PR and push to `main`,
@@ -108,6 +110,9 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   minutes are free. **Caveat:** the hosted image must ship Xcode 26.x for
   the `glassEffect` APIs; if the image lags, use the self-hosted Mac mini
   runner pattern from `vle` instead.
+  *Decision 2026-09-11:* the hosted `macos-26` image defaults to Xcode 26.6
+  build 17F113, identical to the local toolchain, so B3 uses hosted runners.
+  The Mac mini (Xcode 26.6, no runner installed) stays a fallback only.
   *Done when:* a green run on a PR; a deliberate test failure turns it red.
 
 - [ ] **B4 · Repo hardening** (S)
