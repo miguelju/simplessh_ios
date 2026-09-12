@@ -21,7 +21,7 @@ open simplessh.xcodeproj
 xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 17' build
 
-# Tests (target exists; sources arrive with roadmap item B1)
+# Tests (Swift Testing; simplesshTests/)
 xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```

@@ -44,10 +44,19 @@ simplessh/
 └── simplessh.entitlements        App Sandbox + network.client
 ```
 
-Xcode uses a synchronized root group for `simplessh/`, so new files under it are
-picked up without editing the project. There is no bridging header; Citadel is
-pure Swift. The test targets exist in the project but have no sources yet
-(roadmap B1).
+```
+simplesshTests/                   Unit-test bundle (Swift Testing), hosted by the app
+├── TerminalEmulatorTests.swift   Grid, cursor, scrollback, alt screen, query replies, split feeds
+├── PrivateKeyParsingTests.swift  Accepted formats and every rejection path of parsePrivateKey
+├── HostValidationTests.swift     isValidHost accept/reject tables
+└── Support/TestKeys.swift        Generates Ed25519 (CryptoKit) and RSA (Security) keys at test
+                                  time and serialises them as OpenSSH / PKCS#1 text
+```
+
+Xcode uses synchronized root groups for `simplessh/` and `simplesshTests/`, so
+new files under either are picked up without editing the project. The shared
+scheme `simplessh` builds the app and runs the test bundle. There is no bridging
+header; Citadel is pure Swift.
 
 ## Screens and flows
 
@@ -172,12 +181,24 @@ merging runs of identical style, resolving reverse video and dim against the
 theme defaults. The cursor is not drawn yet (roadmap D2), and the whole
 scrollback is re-rendered on every batch (roadmap D3).
 
+Read-only inspection accessors (`cursorRow`/`cursorCol`, `isAlternateScreenActive`,
+`scrollbackLineCount`, `scrollTop`/`scrollBottom`, `cell(row:col:)`, `lineText`,
+`screenText`, `scrollbackLineText`) expose state for the tests and for the
+cursor rendering planned in D2. Nothing else reads them.
+
 ## Key parsing (`SSHManager.parsePrivateKey`)
 
-| Input | Path | Auth method |
+`parsePrivateKey(_:)` turns key text into a `ParsedPrivateKey` (`.ed25519` or
+`.rsa`); the private `parsePrivateKey(from:username:)` wraps that in a Citadel
+`SSHAuthenticationMethod`. For OpenSSH containers the algorithm is read from the
+public-key blob (`detectOpenSSHKeyType`, a bounds-checked walk of magic, cipher,
+kdf, key count, blob), so a truncated file throws and an unsupported algorithm
+is reported by name.
+
+| Input | Path | Result |
 |---|---|---|
-| `-----BEGIN OPENSSH PRIVATE KEY-----` containing `ssh-ed25519` | Custom parser: magic, cipher, kdf, key count, public blob, private section; check ints must match (else the key is encrypted); 64-byte private field → first 32 bytes are the seed → `Curve25519.Signing.PrivateKey` | `.ed25519` |
-| Same header containing `ssh-rsa` | Citadel `Insecure.RSA.PrivateKey(sshRsa:)` | `.rsa` |
+| `-----BEGIN OPENSSH PRIVATE KEY-----`, blob type `ssh-ed25519` | Custom parser: private section; check ints must match (else the key is encrypted); 64-byte private field → first 32 bytes are the seed → `Curve25519.Signing.PrivateKey` | `.ed25519` |
+| Same header, blob type `ssh-rsa` | Citadel `Insecure.RSA.PrivateKey(sshRsa:)` | `.rsa` |
 | `-----BEGIN RSA PRIVATE KEY-----` | PEM → DER, minimal ASN.1 walk for modulus, public and private exponent → BoringSSL BIGNUMs → `Insecure.RSA.PrivateKey` | `.rsa` |
 
 Roadmap C2 replaces the custom Ed25519 and PKCS#1 code with Citadel's own
@@ -193,6 +214,27 @@ item carries `SecAccessControl(kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
 deletes any existing item first. `retrieveSSHKey` attaches an `LAContext`, so
 the read itself can prompt; `retrieveSSHKeyWithoutAuth` sets
 `interactionNotAllowed` and is used only by `SSHConnection.hasSSHKey()`.
+
+## Tests
+
+`simplesshTests` is a Swift Testing bundle hosted by the app (`@testable import
+simplessh`), with the same `MainActor` default isolation as the app so
+`TerminalEmulator` and the parser can be called directly. Everything runs on the
+simulator; nothing touches the Keychain, Face ID or the network.
+
+- **TerminalEmulator** — small grids (for example 10×4) fed byte strings, asserted
+  through the inspection accessors and `render(...)`.
+- **Key parsing** — `TestKeys` generates an Ed25519 key with CryptoKit and an RSA
+  key with `SecKeyCreateRandomKey`, then serialises them itself (openssh-key-v1
+  container, PKCS#1 PEM). The RSA tests sign and verify with the decoded key to
+  prove the private exponent was read. Rejection fixtures are built the same
+  way: an encrypted-looking container, an unsupported algorithm, truncated
+  payloads, a three-byte payload. **No private-key material is committed**; the
+  pre-push gate (roadmap B4) rejects PEM blocks.
+- **Host validation** — parameterised accept/reject tables for `isValidHost`.
+
+Run: `xcodebuild … -scheme simplessh -sdk iphonesimulator -destination … test`
+(see `README.md`).
 
 ## Concurrency
 

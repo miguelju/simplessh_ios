@@ -93,6 +93,39 @@ final class TerminalEmulator {
         return reply
     }
 
+    // MARK: - Inspection
+
+    // Read-only views of emulator state. The unit tests assert on these, and
+    // the cursor accessors are what a rendered cursor (roadmap D2) will use.
+
+    /// Zero-based cursor row on the active screen.
+    var cursorRow: Int { row }
+    /// Zero-based cursor column on the active screen.
+    var cursorCol: Int { col }
+    /// True while the alternate screen (`?47`, `?1047`, `?1049`) is active.
+    var isAlternateScreenActive: Bool { usingAlt }
+    /// Number of main-screen lines that have scrolled off the top.
+    var scrollbackLineCount: Int { scrollback.count }
+    /// Top of the scroll region (DECSTBM), zero-based, inclusive.
+    var scrollTop: Int { top }
+    /// Bottom of the scroll region (DECSTBM), zero-based, inclusive.
+    var scrollBottom: Int { bottom }
+
+    /// The cell at a zero-based position on the active screen.
+    func cell(row r: Int, col c: Int) -> Cell { screen[r][c] }
+    /// One active-screen line as text, trailing blanks trimmed.
+    func lineText(_ r: Int) -> String { Self.text(of: screen[r]) }
+    /// Every active-screen line as text (see `lineText`).
+    var screenText: [String] { screen.map(Self.text(of:)) }
+    /// One scrollback line as text, oldest first, trailing blanks trimmed.
+    func scrollbackLineText(_ i: Int) -> String { Self.text(of: scrollback[i]) }
+
+    private static func text(of line: [Cell]) -> String {
+        var s = String(line.map(\.ch))
+        while s.last == " " { s.removeLast() }
+        return s
+    }
+
     // MARK: - Init
 
     init(cols: Int = 80, rows: Int = 24) {

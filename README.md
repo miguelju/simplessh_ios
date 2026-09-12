@@ -84,6 +84,10 @@ xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphoneos build
 # Simulator build
 xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 17' build
+
+# Unit tests (terminal emulator, key parsing, host validation)
+xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
+  -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
 ### Common issues

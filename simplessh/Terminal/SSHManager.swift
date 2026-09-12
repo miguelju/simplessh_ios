@@ -285,26 +285,38 @@ class SSHManager: ObservableObject {
 
     // MARK: - Key Parsing
 
-    /// Parses a private key string and returns the appropriate SSHAuthenticationMethod.
-    /// Supports:
+    /// A private key decoded from its text form. Internal rather than private
+    /// so the unit tests can assert on the decoded key material.
+    enum ParsedPrivateKey {
+        case ed25519(Curve25519.Signing.PrivateKey)
+        case rsa(Insecure.RSA.PrivateKey)
+    }
+
+    /// Builds the Citadel authentication method for a private key string.
+    private static func parsePrivateKey(from keyString: String, username: String) throws -> SSHAuthenticationMethod {
+        switch try parsePrivateKey(keyString) {
+        case .ed25519(let key): return .ed25519(username: username, privateKey: key)
+        case .rsa(let key):     return .rsa(username: username, privateKey: key)
+        }
+    }
+
+    /// Parses a private key string. Supports:
     /// - OpenSSH Ed25519: -----BEGIN OPENSSH PRIVATE KEY----- (ssh-ed25519)
     /// - OpenSSH RSA: -----BEGIN OPENSSH PRIVATE KEY----- (ssh-rsa)
     /// - PEM RSA (PKCS#1): -----BEGIN RSA PRIVATE KEY-----
-    private static func parsePrivateKey(from keyString: String, username: String) throws -> SSHAuthenticationMethod {
+    static func parsePrivateKey(_ keyString: String) throws -> ParsedPrivateKey {
         let trimmed = keyString.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // OpenSSH format — detect key type from the binary content
         if trimmed.hasPrefix("-----BEGIN OPENSSH PRIVATE KEY-----") {
             let keyData = try pemToDER(trimmed)
-            let keyType = detectOpenSSHKeyType(keyData)
+            let keyType = try detectOpenSSHKeyType(keyData)
 
             switch keyType {
             case .ed25519:
-                let ed25519Key = try parseOpenSSHEd25519(keyData)
-                return .ed25519(username: username, privateKey: ed25519Key)
+                return .ed25519(try parseOpenSSHEd25519(keyData))
             case .rsa:
-                let rsaKey = try Insecure.RSA.PrivateKey(sshRsa: trimmed)
-                return .rsa(username: username, privateKey: rsaKey)
+                return .rsa(try Insecure.RSA.PrivateKey(sshRsa: trimmed))
             case .unknown(let name):
                 throw SSHError.keyParsingFailed("Unsupported key type: \(name)")
             }
@@ -313,8 +325,7 @@ class SSHManager: ObservableObject {
         // PEM PKCS#1 RSA format
         if trimmed.hasPrefix("-----BEGIN RSA PRIVATE KEY-----") {
             let derData = try pemToDER(trimmed)
-            let rsaKey = try parseRSAPKCS1DER(derData)
-            return .rsa(username: username, privateKey: rsaKey)
+            return .rsa(try parseRSAPKCS1DER(derData))
         }
 
         throw SSHError.keyParsingFailed("Unsupported key format. Use OpenSSH or PEM RSA format.")
@@ -327,22 +338,32 @@ class SSHManager: ObservableObject {
         case unknown(String)
     }
 
-    /// Detects the key type from OpenSSH binary data by scanning for key type strings
-    private static func detectOpenSSHKeyType(_ data: Data) -> OpenSSHKeyType {
+    /// Reads the algorithm name from the public-key blob of an openssh-key-v1
+    /// container. Walks the structure with bounds checks rather than scanning
+    /// the bytes for a marker, so short or malformed input throws instead of
+    /// crashing, and an unsupported algorithm is reported by name.
+    private static func detectOpenSSHKeyType(_ data: Data) throws -> OpenSSHKeyType {
         let bytes = Array(data)
-        // Search for "ssh-ed25519" or "ssh-rsa" in the binary data
-        if let str = String(data: data, encoding: .ascii) {
-            if str.contains("ssh-ed25519") { return .ed25519 }
-            if str.contains("ssh-rsa") { return .rsa }
+        let magic = Array("openssh-key-v1\0".utf8)
+        guard bytes.count > magic.count, bytes[0..<magic.count].elementsEqual(magic) else {
+            throw SSHError.keyParsingFailed("Invalid OpenSSH key magic")
         }
-        // Fallback: check raw bytes for known patterns
-        let ed25519Marker: [UInt8] = Array("ssh-ed25519".utf8)
-        for i in 0..<(bytes.count - ed25519Marker.count) {
-            if Array(bytes[i..<(i + ed25519Marker.count)]) == ed25519Marker {
-                return .ed25519
-            }
+        var offset = magic.count
+        _ = try readOpenSSHString(bytes: bytes, offset: &offset)   // ciphername
+        _ = try readOpenSSHString(bytes: bytes, offset: &offset)   // kdfname
+        _ = try readOpenSSHString(bytes: bytes, offset: &offset)   // kdfoptions
+        guard offset + 4 <= bytes.count else {
+            throw SSHError.keyParsingFailed("Truncated key data")
         }
-        return .unknown("unknown")
+        offset += 4                                                 // number of keys
+        let publicBlob = try readOpenSSHString(bytes: bytes, offset: &offset)
+        var blobOffset = 0
+        let name = try readOpenSSHString(bytes: publicBlob, offset: &blobOffset)
+        switch String(decoding: name, as: UTF8.self) {
+        case "ssh-ed25519": return .ed25519
+        case "ssh-rsa":     return .rsa
+        case let other:     return .unknown(other)
+        }
     }
 
     /// Parses an OpenSSH Ed25519 private key and returns a Curve25519.Signing.PrivateKey.

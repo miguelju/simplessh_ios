@@ -75,7 +75,7 @@ Mechanical cleanups that make every later diff smaller and reviews faster.
 
 Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
 
-- [ ] **B1 · Unit-test target with Swift Testing** (L)
+- [x] **B1 · Unit-test target with Swift Testing** (L)
   Recreate `simplesshTests/` as a real target (the current one points at a
   deleted folder). Priority order:
   1. `TerminalEmulator` — feed byte sequences, assert grid/cursor/scrollback/
@@ -92,6 +92,12 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
      and empty-octet typos.
   *Done when:* `xcodebuild … test` passes on the simulator; the three areas
   above have tests; CLAUDE.md's test command works as written.
+  *Done 2026-09-12:* 55 tests green on the iPhone 17 simulator
+  (`simplesshTests/`, shared scheme `simplessh`). Testing the under-11-byte
+  input required removing the crash: `detectOpenSSHKeyType` now walks the
+  container with bounds checks instead of scanning for a marker (C2 still
+  replaces the parsers). The `simplesshUITests` target, which also pointed at
+  a deleted folder, was removed.
 
 - [ ] **B2 · Dependency seams** (M)
   Put `KeychainManager` behind a `KeyStore` protocol with an in-memory test
@@ -121,6 +127,12 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   Copy the private-data pre-push hook into `hooks/pre-push`, set
   `core.hooksPath=hooks`, scope the diff to exclude `hooks/`. Enable
   `sha_pinning_required` **after** B3 pins every action.
+  *Note from B1:* the config-repo hook's `BEGIN … PRIVATE KEY` pattern is a
+  substring match, so it fires on this repo's own parser (`hasPrefix` lines in
+  `SSHManager.swift`), on `ARCHITECTURE.md` and on the test helper's armour
+  code. The copied hook must anchor the pattern to a header **followed by a
+  base64 body line** (or exclude Swift string literals and Markdown) so it
+  catches a pasted key without blocking every parser change.
   *Done when:* `gh api repos/miguelju/simplessh_ios/rulesets` lists four;
   an unsigned test push to `main` is rejected; the hook blocks a PEM block.
 
