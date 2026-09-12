@@ -232,13 +232,13 @@ All dependencies are managed via Swift Package Manager and resolve automatically
 | Library | Version | License | Description |
 |---|---|---|---|
 | [swift-nio-ssh](https://github.com/Joannis/swift-nio-ssh) | 0.3.5 | Apache 2.0 | SSH protocol implementation (Citadel fork) |
-| [swift-nio](https://github.com/apple/swift-nio) | 2.96.0 | Apache 2.0 | Event-driven network framework (Apple) |
+| [swift-nio](https://github.com/apple/swift-nio) | 2.101.2 | Apache 2.0 | Event-driven network framework (Apple) |
 | [swift-crypto](https://github.com/apple/swift-crypto) | 2.0.5 | Apache 2.0 | Cryptographic operations (Apple) |
 | [BigInt](https://github.com/attaswift/BigInt) | 5.7.0 | MIT | Large number arithmetic for RSA |
-| [swift-log](https://github.com/apple/swift-log) | 1.10.1 | Apache 2.0 | Logging framework (Apple) |
-| [swift-atomics](https://github.com/apple/swift-atomics) | 1.3.0 | Apache 2.0 | Atomic operations (Apple) |
-| [swift-collections](https://github.com/apple/swift-collections) | 1.4.1 | Apache 2.0 | Data structure extensions (Apple) |
-| [swift-system](https://github.com/apple/swift-system) | 1.6.4 | Apache 2.0 | System interfaces (Apple) |
+| [swift-log](https://github.com/apple/swift-log) | 1.14.0 | Apache 2.0 | Logging framework (Apple) |
+| [swift-atomics](https://github.com/apple/swift-atomics) | 1.3.1 | Apache 2.0 | Atomic operations (Apple) |
+| [swift-collections](https://github.com/apple/swift-collections) | 1.6.0 | Apache 2.0 | Data structure extensions (Apple) |
+| [swift-system](https://github.com/apple/swift-system) | 1.7.2 | Apache 2.0 | System interfaces (Apple) |
 | [ColorizeSwift](https://github.com/mtynior/ColorizeSwift) | 1.7.0 | MIT | Terminal string colorization |
 
 ## Development

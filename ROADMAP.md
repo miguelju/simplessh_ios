@@ -47,7 +47,7 @@ Mechanical cleanups that make every later diff smaller and reviews faster.
   `Info-plist-additions.xml`, and `icons.code`.
   *Done when:* `grep` finds no references; build is warning-free.
 
-- [ ] **A3 · Commit `Package.resolved`** (S)
+- [x] **A3 · Commit `Package.resolved`** (S)
   Remove the `swiftpm/` ignore rule from `.gitignore` and commit the lockfile
   so every machine and CI resolve identical dependency versions.
   *Done when:* `git ls-files | grep Package.resolved` is non-empty.
