@@ -66,7 +66,7 @@ Mechanical cleanups that make every later diff smaller and reviews faster.
   *Done when:* the six inner docs are gone, no doc names a symbol that is not
   in the code, `CLAUDE.md` policy lists exactly three docs.
 
-- [ ] **A5 · iPhone-only target** (S)
+- [x] **A5 · iPhone-only target** (S)
   Set `TARGETED_DEVICE_FAMILY = 1` (currently `1,2,7` = iPhone/iPad/Vision)
   to match the docs and the terminal layout. Drop the iPad orientation key.
   *Done when:* project builds; setting verified in `project.pbxproj`.
