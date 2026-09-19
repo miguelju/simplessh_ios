@@ -124,8 +124,8 @@ struct SettingsView: View {
     private func appearanceIcon(_ mode: AppAppearance) -> String {
         switch mode {
         case .system: return "circle.lefthalf.filled"
-        case .light:  return "sun.max.fill"
-        case .dark:   return "moon.fill"
+        case .light: return "sun.max.fill"
+        case .dark: return "moon.fill"
         }
     }
 

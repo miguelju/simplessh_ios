@@ -4,6 +4,7 @@
 //
 
 import Testing
+
 @testable import simplessh
 
 struct HostValidationTests {
@@ -20,17 +21,17 @@ struct HostValidationTests {
 
     @Test(arguments: [
         "", " ", "host name", "user@host", "host_name",
-        "172.20..20.222",      // the double-dot typo the message warns about
-        "172.20.20.",          // empty last octet
-        ".172.20.20.222",      // leading dot
-        "172.20.20",           // three octets
-        "1.2.3.4.5",           // five octets
-        "256.1.1.1",           // octet out of range
-        "1.2.3.-1",            // label starting with a hyphen
+        "172.20..20.222",  // the double-dot typo the message warns about
+        "172.20.20.",  // empty last octet
+        ".172.20.20.222",  // leading dot
+        "172.20.20",  // three octets
+        "1.2.3.4.5",  // five octets
+        "256.1.1.1",  // octet out of range
+        "1.2.3.-1",  // label starting with a hyphen
         "host..name", "-host.com", "host-.com",
-        "1.2.3.4:22",          // port belongs in its own field
+        "1.2.3.4:22",  // port belongs in its own field
         "[::1]", ":::",
-        String(repeating: "a", count: 64) + ".com",                          // label over 63
+        String(repeating: "a", count: 64) + ".com",  // label over 63
         Array(repeating: "abcdefghij", count: 25).joined(separator: ".") + ".abcd",  // 254 chars
     ])
     func rejectsInvalidHosts(_ host: String) {

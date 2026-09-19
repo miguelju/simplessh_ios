@@ -141,10 +141,14 @@ final class TerminalEmulator {
         savedScreen = nil
         scrollback.removeAll(keepingCapacity: true)
         usingAlt = false
-        row = 0; col = 0
-        savedRow = 0; savedCol = 0; savedStyle = Style()
+        row = 0
+        col = 0
+        savedRow = 0
+        savedCol = 0
+        savedStyle = Style()
         wrapNext = false
-        top = 0; bottom = rows - 1
+        top = 0
+        bottom = rows - 1
         cur = Style()
         autowrap = true
         pstate = .ground
@@ -176,10 +180,10 @@ final class TerminalEmulator {
         for scalar in text.unicodeScalars {
             let ch = Character(scalar)
             switch pstate {
-            case .ground:  ground(ch)
-            case .esc:     escape(ch)
-            case .csi:     csi(ch)
-            case .osc:     osc(ch)
+            case .ground: ground(ch)
+            case .esc: escape(ch)
+            case .csi: csi(ch)
+            case .osc: osc(ch)
             case .charset: pstate = .ground  // consume one designator byte
             }
         }
@@ -188,29 +192,54 @@ final class TerminalEmulator {
     private func ground(_ ch: Character) {
         switch ch {
         case "\u{1B}": pstate = .esc
-        case "\r": col = 0; wrapNext = false
-        case "\n", "\u{0B}", "\u{0C}": lineFeed()   // LF, VT, FF
+        case "\r":
+            col = 0
+            wrapNext = false
+        case "\n", "\u{0B}", "\u{0C}": lineFeed()  // LF, VT, FF
         case "\u{08}": backspace()
         case "\t": tab()
-        case "\u{07}": break                         // BEL
+        case "\u{07}": break  // BEL
         default:
-            if let a = ch.asciiValue, a < 0x20 { break } // other C0 controls
+            if let a = ch.asciiValue, a < 0x20 { break }  // other C0 controls
             putChar(sanitizedGlyph(ch))
         }
     }
 
     private func escape(_ ch: Character) {
         switch ch {
-        case "[": csiBuffer = ""; pstate = .csi
-        case "]": oscBuffer = ""; oscPrevWasEsc = false; pstate = .osc
+        case "[":
+            csiBuffer = ""
+            pstate = .csi
+        case "]":
+            oscBuffer = ""
+            oscPrevWasEsc = false
+            pstate = .osc
         case "(", ")", "*", "+": pstate = .charset
-        case "7": savedRow = row; savedCol = col; savedStyle = cur; pstate = .ground   // DECSC
-        case "8": row = savedRow; col = savedCol; cur = savedStyle; clampCursor(); pstate = .ground // DECRC
-        case "M": reverseIndex(); pstate = .ground                                     // RI
-        case "D": lineFeed(); pstate = .ground                                         // IND
-        case "E": col = 0; lineFeed(); pstate = .ground                                // NEL
-        case "c": reset(); pstate = .ground                                            // RIS
-        default: pstate = .ground                                                      // =, >, etc.
+        case "7":
+            savedRow = row
+            savedCol = col
+            savedStyle = cur
+            pstate = .ground  // DECSC
+        case "8":
+            row = savedRow
+            col = savedCol
+            cur = savedStyle
+            clampCursor()
+            pstate = .ground  // DECRC
+        case "M":
+            reverseIndex()
+            pstate = .ground  // RI
+        case "D":
+            lineFeed()
+            pstate = .ground  // IND
+        case "E":
+            col = 0
+            lineFeed()
+            pstate = .ground  // NEL
+        case "c":
+            reset()
+            pstate = .ground  // RIS
+        default: pstate = .ground  // =, >, etc.
         }
     }
 
@@ -228,17 +257,27 @@ final class TerminalEmulator {
         // OSC terminated by BEL or ST (ESC \). We capture the body so we can
         // answer color queries (OSC 10/11/12 with "?"), which some prompts
         // (e.g. Powerlevel10k) probe at startup before drawing.
-        if ch == "\u{07}" { finishOSC(); return }
+        if ch == "\u{07}" {
+            finishOSC()
+            return
+        }
         if oscPrevWasEsc {
             finishOSC()  // ST: ESC \ — the preceding ESC was the terminator start
             return
         }
-        if ch == "\u{1B}" { oscPrevWasEsc = true; return }
+        if ch == "\u{1B}" {
+            oscPrevWasEsc = true
+            return
+        }
         oscBuffer.append(ch)
     }
 
     private func finishOSC() {
-        defer { pstate = .ground; oscPrevWasEsc = false; oscBuffer = "" }
+        defer {
+            pstate = .ground
+            oscPrevWasEsc = false
+            oscBuffer = ""
+        }
         debugLogQuery("OSC", oscBuffer)
         // Color queries: "10;?" (foreground), "11;?" (background), "12;?" (cursor).
         // Reply with a plausible value so capability detection completes. The app
@@ -247,8 +286,8 @@ final class TerminalEmulator {
         guard parts.count == 2, parts[1] == "?" else { return }
         let color: String
         switch parts[0] {
-        case "10", "12": color = "rgb:ffff/ffff/ffff" // foreground / cursor: white
-        case "11":       color = "rgb:0000/0000/0000" // background: black
+        case "10", "12": color = "rgb:ffff/ffff/ffff"  // foreground / cursor: white
+        case "11": color = "rgb:0000/0000/0000"  // background: black
         default: return
         }
         pendingReply += "\u{1B}]\(parts[0]);\(color)\u{07}"
@@ -263,7 +302,12 @@ final class TerminalEmulator {
             wrapNext = false
         }
         if col >= cols {
-            if autowrap { col = 0; lineFeed() } else { col = cols - 1 }
+            if autowrap {
+                col = 0
+                lineFeed()
+            } else {
+                col = cols - 1
+            }
         }
         screen[row][col] = Cell(ch: ch, style: cur)
         if col == cols - 1 {
@@ -347,14 +391,32 @@ final class TerminalEmulator {
         }
 
         switch final {
-        case "A": row = max(top, row - arg(0, 1)); wrapNext = false
-        case "B": row = min(bottom, row + arg(0, 1)); wrapNext = false
-        case "C": col = min(cols - 1, col + arg(0, 1)); wrapNext = false
-        case "D": col = max(0, col - arg(0, 1)); wrapNext = false
-        case "E": col = 0; row = min(bottom, row + arg(0, 1)); wrapNext = false
-        case "F": col = 0; row = max(top, row - arg(0, 1)); wrapNext = false
-        case "G", "`": col = clampCol(arg(0, 1) - 1); wrapNext = false
-        case "d": row = clampRow(arg(0, 1) - 1); wrapNext = false
+        case "A":
+            row = max(top, row - arg(0, 1))
+            wrapNext = false
+        case "B":
+            row = min(bottom, row + arg(0, 1))
+            wrapNext = false
+        case "C":
+            col = min(cols - 1, col + arg(0, 1))
+            wrapNext = false
+        case "D":
+            col = max(0, col - arg(0, 1))
+            wrapNext = false
+        case "E":
+            col = 0
+            row = min(bottom, row + arg(0, 1))
+            wrapNext = false
+        case "F":
+            col = 0
+            row = max(top, row - arg(0, 1))
+            wrapNext = false
+        case "G", "`":
+            col = clampCol(arg(0, 1) - 1)
+            wrapNext = false
+        case "d":
+            row = clampRow(arg(0, 1) - 1)
+            wrapNext = false
         case "H", "f":
             row = clampRow(arg(0, 1) - 1)
             col = clampCol(arg(1, 1) - 1)
@@ -370,33 +432,45 @@ final class TerminalEmulator {
         case "r":
             let t = clampRow(arg(0, 1) - 1)
             let b = clampRow(arg(1, rows) - 1)
-            if t < b { top = t; bottom = b; row = top; col = 0 }
-        case "s": savedRow = row; savedCol = col; savedStyle = cur
-        case "u": row = savedRow; col = savedCol; cur = savedStyle; clampCursor()
-        case "n": // DSR — Device Status Report
+            if t < b {
+                top = t
+                bottom = b
+                row = top
+                col = 0
+            }
+        case "s":
+            savedRow = row
+            savedCol = col
+            savedStyle = cur
+        case "u":
+            row = savedRow
+            col = savedCol
+            cur = savedStyle
+            clampCursor()
+        case "n":  // DSR — Device Status Report
             debugLogQuery("DSR", csiBuffer)
             switch arg(0, 0) {
-            case 5: pendingReply += "\u{1B}[0n"                               // terminal OK
-            case 6: pendingReply += "\u{1B}[\(row + 1);\(col + 1)R"          // cursor position
+            case 5: pendingReply += "\u{1B}[0n"  // terminal OK
+            case 6: pendingReply += "\u{1B}[\(row + 1);\(col + 1)R"  // cursor position
             default: break
             }
-        case "c": // DA — Device Attributes
+        case "c":  // DA — Device Attributes
             debugLogQuery("DA", csiBuffer)
             if csiBuffer.hasPrefix(">") {
-                pendingReply += "\u{1B}[>0;10;0c"   // secondary DA (xterm-like)
+                pendingReply += "\u{1B}[>0;10;0c"  // secondary DA (xterm-like)
             } else {
-                pendingReply += "\u{1B}[?1;2c"      // primary DA: VT100 with Advanced Video
+                pendingReply += "\u{1B}[?1;2c"  // primary DA: VT100 with Advanced Video
             }
-        case "t": // XTWINOPS — window/text-area size reports
+        case "t":  // XTWINOPS — window/text-area size reports
             switch arg(0, 0) {
-            case 18: pendingReply += "\u{1B}[8;\(rows);\(cols)t"            // text area, chars
-            case 14: pendingReply += "\u{1B}[4;\(rows * 16);\(cols * 8)t"   // text area, pixels (approx)
-            case 16: pendingReply += "\u{1B}[6;16;8t"                       // cell size, pixels (approx)
+            case 18: pendingReply += "\u{1B}[8;\(rows);\(cols)t"  // text area, chars
+            case 14: pendingReply += "\u{1B}[4;\(rows * 16);\(cols * 8)t"  // text area, pixels (approx)
+            case 16: pendingReply += "\u{1B}[6;16;8t"  // cell size, pixels (approx)
             default: break
             }
-        case "q" where csiBuffer.hasPrefix(">"): // XTVERSION request (CSI > q)
+        case "q" where csiBuffer.hasPrefix(">"):  // XTVERSION request (CSI > q)
             debugLogQuery("XTVERSION", csiBuffer)
-            pendingReply += "\u{1B}P>|simplessh(1.0)\u{1B}\\"   // DCS > | name ST
+            pendingReply += "\u{1B}P>|simplessh(1.0)\u{1B}\\"  // DCS > | name ST
         default:
             debugLogQuery("CSI", csiBuffer + String(final))
         }
@@ -421,15 +495,22 @@ final class TerminalEmulator {
             savedScreen = screen
             screen = TerminalEmulator.makeBlankScreen(rows: rows, cols: cols)
             usingAlt = true
-            row = 0; col = 0; wrapNext = false
-            top = 0; bottom = rows - 1
+            row = 0
+            col = 0
+            wrapNext = false
+            top = 0
+            bottom = rows - 1
         } else {
-            guard usingAlt, let restored = savedScreen else { usingAlt = false; return }
+            guard usingAlt, let restored = savedScreen else {
+                usingAlt = false
+                return
+            }
             screen = restored
             savedScreen = nil
             usingAlt = false
             wrapNext = false
-            top = 0; bottom = rows - 1
+            top = 0
+            bottom = rows - 1
             clampCursor()
         }
     }
@@ -438,17 +519,17 @@ final class TerminalEmulator {
 
     private func eraseInDisplay(_ mode: Int) {
         switch mode {
-        case 0: // cursor → end of screen
+        case 0:  // cursor → end of screen
             eraseInLine(0)
             if row + 1 < rows {
                 for r in (row + 1)..<rows { screen[r] = blankLine() }
             }
-        case 1: // start of screen → cursor
+        case 1:  // start of screen → cursor
             if row > 0 {
                 for r in 0..<row { screen[r] = blankLine() }
             }
             eraseInLine(1)
-        case 2, 3: // whole screen (3 also clears scrollback)
+        case 2, 3:  // whole screen (3 also clears scrollback)
             for r in 0..<rows { screen[r] = blankLine() }
             if mode == 3 { scrollback.removeAll(keepingCapacity: true) }
         default:
@@ -459,9 +540,9 @@ final class TerminalEmulator {
 
     private func eraseInLine(_ mode: Int) {
         switch mode {
-        case 0: for c in col..<cols { screen[row][c] = blankCell() }       // cursor → end
-        case 1: for c in 0...min(col, cols - 1) { screen[row][c] = blankCell() } // start → cursor
-        case 2: screen[row] = blankLine()                                  // whole line
+        case 0: for c in col..<cols { screen[row][c] = blankCell() }  // cursor → end
+        case 1: for c in 0...min(col, cols - 1) { screen[row][c] = blankCell() }  // start → cursor
+        case 2: screen[row] = blankLine()  // whole line
         default: break
         }
         wrapNext = false
@@ -516,7 +597,10 @@ final class TerminalEmulator {
 
     private func clampRow(_ r: Int) -> Int { min(max(0, r), rows - 1) }
     private func clampCol(_ c: Int) -> Int { min(max(0, c), cols - 1) }
-    private func clampCursor() { row = clampRow(row); col = clampCol(col) }
+    private func clampCursor() {
+        row = clampRow(row)
+        col = clampCol(col)
+    }
 
     // MARK: - Glyph sanitization
 
@@ -533,8 +617,9 @@ final class TerminalEmulator {
     /// Xcode console. No-op in release.
     private func debugLogQuery(_ kind: String, _ body: String) {
         #if DEBUG
-        let escaped = body.unicodeScalars.map { $0.value < 0x20 ? "\\x\(String($0.value, radix: 16))" : String($0) }.joined()
-        print("[term-query] \(kind): \(escaped)")
+            let escaped = body.unicodeScalars.map { $0.value < 0x20 ? "\\x\(String($0.value, radix: 16))" : String($0) }
+                .joined()
+            print("[term-query] \(kind): \(escaped)")
         #endif
     }
 
@@ -553,7 +638,9 @@ final class TerminalEmulator {
             case 4: cur.underline = true
             case 7: cur.reverse = true
             case 9: cur.strikethrough = true
-            case 21, 22: cur.bold = false; cur.dim = false
+            case 21, 22:
+                cur.bold = false
+                cur.dim = false
             case 23: cur.italic = false
             case 24: cur.underline = false
             case 27: cur.reverse = false
@@ -566,15 +653,23 @@ final class TerminalEmulator {
             case 100...107: cur.bg = Self.brightColors[code - 100]
             case 38:
                 if i + 2 < params.count && params[i + 1] == 5 {
-                    cur.fg = Self.color256(params[i + 2]); i += 2
+                    cur.fg = Self.color256(params[i + 2])
+                    i += 2
                 } else if i + 4 < params.count && params[i + 1] == 2 {
-                    cur.fg = Color(red: Double(params[i+2])/255, green: Double(params[i+3])/255, blue: Double(params[i+4])/255); i += 4
+                    cur.fg = Color(
+                        red: Double(params[i + 2]) / 255, green: Double(params[i + 3]) / 255,
+                        blue: Double(params[i + 4]) / 255)
+                    i += 4
                 }
             case 48:
                 if i + 2 < params.count && params[i + 1] == 5 {
-                    cur.bg = Self.color256(params[i + 2]); i += 2
+                    cur.bg = Self.color256(params[i + 2])
+                    i += 2
                 } else if i + 4 < params.count && params[i + 1] == 2 {
-                    cur.bg = Color(red: Double(params[i+2])/255, green: Double(params[i+3])/255, blue: Double(params[i+4])/255); i += 4
+                    cur.bg = Color(
+                        red: Double(params[i + 2]) / 255, green: Double(params[i + 3]) / 255,
+                        blue: Double(params[i + 4]) / 255)
+                    i += 4
                 }
             default: break
             }
@@ -612,7 +707,9 @@ final class TerminalEmulator {
         case 8...15: return brightColors[index - 8]
         case 16...231:
             let a = index - 16
-            let r = a / 36, g = (a % 36) / 6, b = a % 6
+            let r = a / 36
+            let g = (a % 36) / 6
+            let b = a % 6
             return Color(
                 red: r == 0 ? 0 : (Double(r) * 40 + 55) / 255,
                 green: g == 0 ? 0 : (Double(g) * 40 + 55) / 255,
@@ -629,10 +726,12 @@ final class TerminalEmulator {
 
     /// Renders scrollback + the visible screen (or just the alternate screen)
     /// into a styled AttributedString.
-    func render(defaultForeground: Color,
-                defaultBackground: Color,
-                defaultFont: Font,
-                boldFont: Font) -> AttributedString {
+    func render(
+        defaultForeground: Color,
+        defaultBackground: Color,
+        defaultFont: Font,
+        boldFont: Font
+    ) -> AttributedString {
         var lines: [[Cell]] = usingAlt ? screen : scrollback + screen
 
         // Drop trailing all-blank lines so an 80x24 screen that's mostly empty
@@ -644,20 +743,23 @@ final class TerminalEmulator {
         var result = AttributedString()
         for (idx, line) in lines.enumerated() {
             if idx > 0 { result += AttributedString("\n") }
-            result += renderLine(line,
-                                 defaultForeground: defaultForeground,
-                                 defaultBackground: defaultBackground,
-                                 defaultFont: defaultFont,
-                                 boldFont: boldFont)
+            result += renderLine(
+                line,
+                defaultForeground: defaultForeground,
+                defaultBackground: defaultBackground,
+                defaultFont: defaultFont,
+                boldFont: boldFont)
         }
         return result
     }
 
-    private func renderLine(_ line: [Cell],
-                            defaultForeground: Color,
-                            defaultBackground: Color,
-                            defaultFont: Font,
-                            boldFont: Font) -> AttributedString {
+    private func renderLine(
+        _ line: [Cell],
+        defaultForeground: Color,
+        defaultBackground: Color,
+        defaultFont: Font,
+        boldFont: Font
+    ) -> AttributedString {
         // Trim trailing blank cells that carry no background, to avoid long
         // runs of spaces wrapping awkwardly on the narrow phone display.
         var end = line.count
@@ -671,10 +773,11 @@ final class TerminalEmulator {
 
         func flush() {
             guard let s = runStyle, !runText.isEmpty else { return }
-            result += styled(runText, style: s,
-                             defaultForeground: defaultForeground,
-                             defaultBackground: defaultBackground,
-                             defaultFont: defaultFont, boldFont: boldFont)
+            result += styled(
+                runText, style: s,
+                defaultForeground: defaultForeground,
+                defaultBackground: defaultBackground,
+                defaultFont: defaultFont, boldFont: boldFont)
             runText = ""
         }
 
@@ -693,9 +796,11 @@ final class TerminalEmulator {
         return result
     }
 
-    private func styled(_ text: String, style: Style,
-                        defaultForeground: Color, defaultBackground: Color,
-                        defaultFont: Font, boldFont: Font) -> AttributedString {
+    private func styled(
+        _ text: String, style: Style,
+        defaultForeground: Color, defaultBackground: Color,
+        defaultFont: Font, boldFont: Font
+    ) -> AttributedString {
         var fg = style.fg ?? defaultForeground
         var bg = style.bg
         if style.reverse {
