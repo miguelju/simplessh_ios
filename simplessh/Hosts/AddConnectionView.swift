@@ -5,16 +5,16 @@
 //  Created by Miguel Jackson on 3/18/26.
 //
 
-import SwiftUI
-import SwiftData
 import Network
+import SwiftData
+import SwiftUI
 
 /// View for adding or editing SSH connection details
 /// Features a modern Liquid Glass design with intuitive input fields
 struct AddConnectionView: View {
     /// Access to the SwiftData model context for saving connections
     @Environment(\.modelContext) private var modelContext
-    
+
     /// Environment variable to dismiss this view
     @Environment(\.dismiss) private var dismiss
 
@@ -23,55 +23,55 @@ struct AddConnectionView: View {
 
     /// Current color scheme for adaptive styling
     @Environment(\.colorScheme) private var colorScheme
-    
+
     /// Optional existing connection to edit (nil means creating a new connection)
     var connectionToEdit: SSHConnection? = nil
-    
+
     /// Whether we are in edit mode
     private var isEditing: Bool { connectionToEdit != nil }
-    
+
     /// Connection name entered by the user
     @State private var connectionName: String = ""
-    
+
     /// Server IP address or hostname
     @State private var serverIP: String = ""
-    
+
     /// SSH username
     @State private var username: String = ""
-    
+
     /// SSH private key content
     @State private var sshKey: String = ""
-    
+
     /// SSH port number (default: 22)
     @State private var port: String = "22"
-    
+
     /// Whether to require biometric authentication
     @State private var requireBiometric: Bool = true
-    
+
     /// Flag to show validation errors
     @State private var showError: Bool = false
-    
+
     /// Error message to display
     @State private var errorMessage: String = ""
-    
+
     /// Biometric type available on device
     private var biometricType: String {
         KeychainManager.shared.biometricType()
     }
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     // Header section with icon
                     headerSection
-                    
+
                     // Input fields section
                     inputFieldsSection
-                    
+
                     // SSH Key section
                     sshKeySection
-                    
+
                     // Save button
                     saveButton
                 }
@@ -100,15 +100,15 @@ struct AddConnectionView: View {
                 }
             }
             .alert("Invalid Input", isPresented: $showError) {
-                Button("OK", role: .cancel) { }
+                Button("OK", role: .cancel) {}
             } message: {
                 Text(errorMessage)
             }
         }
     }
-    
+
     // MARK: - View Components
-    
+
     /// Header section with SSH icon
     private var headerSection: some View {
         VStack(spacing: 12) {
@@ -117,14 +117,14 @@ struct AddConnectionView: View {
                 .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                 .frame(width: 120, height: 120)
                 .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.3)).interactive(), in: .circle)
-            
+
             Text(isEditing ? "Edit Connection Details" : "SSH Connection Setup")
                 .font(.title3)
                 .foregroundStyle(.secondary)
         }
         .padding(.top)
     }
-    
+
     /// Input fields for connection details
     private var inputFieldsSection: some View {
         VStack(spacing: 16) {
@@ -134,7 +134,7 @@ struct AddConnectionView: View {
                 placeholder: "Connection Name",
                 text: $connectionName
             )
-            
+
             // Server IP field
             InputFieldView(
                 icon: "server.rack",
@@ -142,7 +142,7 @@ struct AddConnectionView: View {
                 text: $serverIP,
                 keyboardType: .URL
             )
-            
+
             // Username field
             InputFieldView(
                 icon: "person.fill",
@@ -150,7 +150,7 @@ struct AddConnectionView: View {
                 text: $username,
                 autocapitalization: .never
             )
-            
+
             // Port field
             InputFieldView(
                 icon: "network",
@@ -160,14 +160,14 @@ struct AddConnectionView: View {
             )
         }
     }
-    
+
     /// SSH Key input section
     private var sshKeySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label("SSH Private Key", systemImage: "key.fill")
                 .font(.headline)
                 .foregroundStyle(.primary)
-            
+
             TextEditor(text: $sshKey)
                 .font(.system(.caption, design: .monospaced))
                 .foregroundStyle(.primary)
@@ -175,16 +175,19 @@ struct AddConnectionView: View {
                 .frame(minHeight: 150)
                 .padding()
                 .background(Color.primary.opacity(0.05))
-                .glassEffect(.regular.tint(.gray.opacity(colorScheme == .dark ? 1.0 : 0.2)).interactive(), in: .rect(cornerRadius: 16))
+                .glassEffect(
+                    .regular.tint(.gray.opacity(colorScheme == .dark ? 1.0 : 0.2)).interactive(),
+                    in: .rect(cornerRadius: 16)
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.primary.opacity(0.2), lineWidth: 1)
                 )
-            
+
             Text(isEditing ? "Leave empty to keep existing key" : "Paste your SSH private key (PEM format)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            
+
             // Biometric authentication toggle
             if KeychainManager.shared.isBiometricAuthenticationAvailable() {
                 Toggle(isOn: $requireBiometric) {
@@ -197,11 +200,13 @@ struct AddConnectionView: View {
                 }
                 .tint(.blue)
                 .padding()
-                .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.2)).interactive(), in: .rect(cornerRadius: 12))
+                .glassEffect(
+                    .regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.2)).interactive(),
+                    in: .rect(cornerRadius: 12))
             }
         }
     }
-    
+
     /// Save button with glass effect
     private var saveButton: some View {
         Button(action: saveConnection) {
@@ -214,7 +219,7 @@ struct AddConnectionView: View {
         }
         .padding(.top)
     }
-    
+
     /// Background that adapts to light/dark mode.
     /// Light: clean light gray (Outlook-style). Dark: blue/purple gradient.
     private var gradientBackground: some View {
@@ -226,7 +231,7 @@ struct AddConnectionView: View {
                             colors: [
                                 Color.blue.opacity(0.3),
                                 Color.purple.opacity(0.3),
-                                Color.blue.opacity(0.3)
+                                Color.blue.opacity(0.3),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -238,9 +243,9 @@ struct AddConnectionView: View {
         }
         .ignoresSafeArea()
     }
-    
+
     // MARK: - Actions
-    
+
     /// Validates input and saves the SSH connection
     private func saveConnection() {
         // Validate inputs
@@ -248,7 +253,7 @@ struct AddConnectionView: View {
             showError(message: "Please enter a connection name")
             return
         }
-        
+
         // Normalize the host: trim surrounding whitespace/newlines (easy to paste in).
         let host = serverIP.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !host.isEmpty else {
@@ -260,7 +265,10 @@ struct AddConnectionView: View {
         // before saving, so typos surface here instead of as a cryptic network
         // error at connect time (e.g. "172.20..20.222").
         guard Self.isValidHost(host) else {
-            showError(message: "\u{201C}\(host)\u{201D} isn't a valid IP address or hostname. Check for typos such as empty octets or double dots (e.g. 172.20..20.222).")
+            showError(
+                message:
+                    "\u{201C}\(host)\u{201D} isn't a valid IP address or hostname. Check for typos such as empty octets or double dots (e.g. 172.20..20.222)."
+            )
             return
         }
 
@@ -268,7 +276,7 @@ struct AddConnectionView: View {
             showError(message: "Please enter a username")
             return
         }
-        
+
         // SSH key is required for new connections, optional for edits
         if !isEditing {
             guard !sshKey.isEmpty else {
@@ -276,12 +284,12 @@ struct AddConnectionView: View {
                 return
             }
         }
-        
+
         guard let portNumber = Int(port), portNumber > 0, portNumber <= 65535 else {
             showError(message: "Please enter a valid port number (1-65535)")
             return
         }
-        
+
         if let connection = connectionToEdit {
             // Update existing connection
             connection.name = connectionName
@@ -289,11 +297,14 @@ struct AddConnectionView: View {
             connection.username = username
             connection.port = portNumber
             connection.requiresBiometric = requireBiometric
-            
+
             // Update the stored key only if a new one was provided
             if !sshKey.isEmpty {
-                guard keyStore.storeSSHKey(sshKey, for: connection.id.uuidString,
-                                           requireBiometric: connection.requiresBiometric) else {
+                guard
+                    keyStore.storeSSHKey(
+                        sshKey, for: connection.id.uuidString,
+                        requireBiometric: connection.requiresBiometric)
+                else {
                     showError(message: "Failed to store SSH key securely. Please try again.")
                     return
                 }
@@ -307,23 +318,26 @@ struct AddConnectionView: View {
                 port: portNumber,
                 requiresBiometric: requireBiometric
             )
-            
+
             // Store the key before inserting the record, so a store failure
             // leaves no orphan host
-            guard keyStore.storeSSHKey(sshKey, for: connection.id.uuidString,
-                                       requireBiometric: connection.requiresBiometric) else {
+            guard
+                keyStore.storeSSHKey(
+                    sshKey, for: connection.id.uuidString,
+                    requireBiometric: connection.requiresBiometric)
+            else {
                 showError(message: "Failed to store SSH key securely. Please try again.")
                 return
             }
-            
+
             // Save connection to SwiftData
             modelContext.insert(connection)
         }
-        
+
         // Dismiss the view
         dismiss()
     }
-    
+
     /// Shows an error alert
     /// - Parameter message: Error message to display
     private func showError(message: String) {
@@ -379,29 +393,29 @@ struct AddConnectionView: View {
 struct InputFieldView: View {
     /// Icon name for the field
     let icon: String
-    
+
     /// Placeholder text
     let placeholder: String
-    
+
     /// Binding to the text value
     @Binding var text: String
-    
+
     /// Keyboard type (default: .default)
     var keyboardType: UIKeyboardType = .default
-    
+
     /// Text autocapitalization style
     var autocapitalization: TextInputAutocapitalization = .sentences
 
     /// Current color scheme for adaptive styling
     @Environment(\.colorScheme) private var colorScheme
-    
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.8) : Color.accentColor.opacity(0.8))
                 .frame(width: 24)
-            
+
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
                 .foregroundStyle(.primary)
@@ -412,7 +426,8 @@ struct InputFieldView: View {
         .padding()
         .frame(height: 56)
         // Light: subtle glass field. Dark: blue-tinted glass.
-        .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.15)).interactive(), in: .rect(cornerRadius: 16))
+        .glassEffect(
+            .regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.15)).interactive(), in: .rect(cornerRadius: 16))
     }
 }
 

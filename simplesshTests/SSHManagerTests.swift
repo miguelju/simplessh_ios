@@ -7,23 +7,27 @@
 //  connection to localhost.
 //
 
-import Testing
+import CryptoKit
 import Foundation
 import SwiftUI
-import CryptoKit
+import Testing
+
 @testable import simplessh
 
 struct SSHManagerTests {
 
-    private let theme = TerminalRenderTheme(foreground: .white, background: .black,
-                                            font: .system(size: 12), boldFont: .system(size: 12).bold())
+    private let theme = TerminalRenderTheme(
+        foreground: .white, background: .black,
+        font: .system(size: 12), boldFont: .system(size: 12).bold())
 
     private func host(port: Int = 22) -> SSHConnection {
         SSHConnection(name: "test", serverIP: "127.0.0.1", username: "nobody", port: port, requiresBiometric: false)
     }
 
-    private func connectError(_ manager: SSHManager, _ connection: SSHConnection,
-                              _ store: KeyStore) async -> SSHManager.SSHError? {
+    private func connectError(
+        _ manager: SSHManager, _ connection: SSHConnection,
+        _ store: KeyStore
+    ) async -> SSHManager.SSHError? {
         do {
             try await manager.connect(to: connection, keyStore: store)
             return nil
@@ -71,8 +75,9 @@ struct SSHManagerTests {
         let manager = SSHManager(renderTheme: theme)
         let store = InMemoryKeyStore()
         let connection = host(port: 1)
-        store.storeSSHKey(TestKeys.opensshEd25519(Curve25519.Signing.PrivateKey()),
-                          for: connection.id.uuidString, requireBiometric: false)
+        store.storeSSHKey(
+            TestKeys.opensshEd25519(Curve25519.Signing.PrivateKey()),
+            for: connection.id.uuidString, requireBiometric: false)
         let error = await connectError(manager, connection, store)
         guard case .connectionFailed? = error else {
             Issue.record("expected connectionFailed, got \(String(describing: error))")
@@ -92,7 +97,7 @@ struct SSHManagerTests {
         bigger.boldFont = .system(size: 20).bold()
         let before = manager.outputVersion
         manager.renderTheme = bigger
-        try await Task.sleep(for: .milliseconds(50))   // one coalesced render hop
+        try await Task.sleep(for: .milliseconds(50))  // one coalesced render hop
         #expect(manager.outputVersion == before + 1)
         #expect(manager.renderedScreen.runs.first?.font == bigger.font)
         #expect(String(manager.renderedScreen.characters) == "prompt$")

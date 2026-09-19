@@ -27,8 +27,9 @@ enum FontRegistrar {
         for name in bundledFontFileNames {
             // Resources are normally flattened to the bundle root; fall back to
             // the "Fonts" subdirectory in case it is copied as a folder reference.
-            guard let url = Bundle.main.url(forResource: name, withExtension: "ttf")
-                ?? Bundle.main.url(forResource: name, withExtension: "ttf", subdirectory: "Fonts")
+            guard
+                let url = Bundle.main.url(forResource: name, withExtension: "ttf")
+                    ?? Bundle.main.url(forResource: name, withExtension: "ttf", subdirectory: "Fonts")
             else { continue }
 
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)

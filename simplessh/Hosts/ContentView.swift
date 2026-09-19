@@ -5,8 +5,8 @@
 //  Created by Miguel Jackson on 3/18/26.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 /// Main view displaying saved SSH connections with Liquid Glass design
 /// Users can view, add, and connect to their saved SSH servers
@@ -16,31 +16,31 @@ struct ContentView: View {
 
     /// Where private keys are stored (Keychain in the app)
     @Environment(\.keyStore) private var keyStore
-    
+
     /// Query to fetch all saved SSH connections, sorted by last used date
     @Query(sort: \SSHConnection.createdAt, order: .reverse) private var connections: [SSHConnection]
-    
+
     /// Current color scheme for adaptive styling
     @Environment(\.colorScheme) private var colorScheme
 
     /// Controls whether the "Add Connection" sheet is presented
     @State private var showingAddConnection = false
-    
+
     /// Controls whether the edit mode is active
     @State private var editMode: EditMode = .inactive
 
     /// Controls whether the settings sheet is presented
     @State private var showingSettings = false
-    
+
     /// The connection currently being edited (nil when not editing)
     @State private var connectionToEdit: SSHConnection?
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 // Background gradient
                 backgroundGradient
-                
+
                 // Main content
                 mainContent
             }
@@ -68,9 +68,9 @@ struct ContentView: View {
             }
         }
     }
-    
+
     // MARK: - View Components
-    
+
     /// Background that adapts to light/dark mode.
     /// Light: clean light gray (Outlook-style). Dark: blue/purple gradient.
     private var backgroundGradient: some View {
@@ -82,7 +82,7 @@ struct ContentView: View {
                             colors: [
                                 Color.blue.opacity(0.3),
                                 Color.purple.opacity(0.2),
-                                Color.blue.opacity(0.3)
+                                Color.blue.opacity(0.3),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -94,7 +94,7 @@ struct ContentView: View {
         }
         .ignoresSafeArea()
     }
-    
+
     /// Main content area - shows either connection list or empty state
     @ViewBuilder
     private var mainContent: some View {
@@ -104,7 +104,7 @@ struct ContentView: View {
             connectionsList
         }
     }
-    
+
     /// Empty state view shown when no connections exist
     private var emptyStateView: some View {
         VStack(spacing: 24) {
@@ -114,19 +114,19 @@ struct ContentView: View {
                 .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                 .frame(width: 160, height: 160)
                 .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.3)).interactive(), in: .circle)
-            
+
             VStack(spacing: 12) {
                 Text("No SSH Connections")
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(.primary)
-                
+
                 Text("Add your first connection to get started")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
-            
+
             // Add connection button
             Button(action: { showingAddConnection = true }) {
                 Label("Add Connection", systemImage: "plus.circle.fill")
@@ -134,13 +134,14 @@ struct ContentView: View {
                     .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                     .padding(.horizontal, 32)
                     .padding(.vertical, 16)
-                    .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.3)).interactive(), in: .capsule)
+                    .glassEffect(
+                        .regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.3)).interactive(), in: .capsule)
             }
             .padding(.top)
         }
         .padding()
     }
-    
+
     /// List of saved SSH connections.
     /// Uses a `List` (not a ScrollView/LazyVStack) so that the per-row
     /// `.swipeActions` actually function — swipe-to-delete only works inside a
@@ -180,7 +181,7 @@ struct ContentView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
     }
-    
+
     /// Toolbar content with add and edit buttons
     private var toolbarContent: some ToolbarContent {
         Group {
@@ -190,7 +191,7 @@ struct ContentView: View {
                     Label("Add Connection", systemImage: "plus")
                 }
             }
-            
+
             // Settings button
             ToolbarItem(placement: .secondaryAction) {
                 Button {
@@ -212,16 +213,16 @@ struct ContentView: View {
             }
         }
     }
-    
+
     // MARK: - Actions
-    
+
     /// Deletes a connection from the database and removes its SSH key from Keychain
     /// - Parameter connection: The connection to delete
     private func deleteConnection(_ connection: SSHConnection) {
         withAnimation {
             // Delete the private key first
             keyStore.deleteSSHKey(for: connection.id.uuidString)
-            
+
             // Delete connection from SwiftData
             modelContext.delete(connection)
         }
@@ -237,13 +238,13 @@ struct ContentView: View {
 struct ConnectionRowView: View {
     /// The SSH connection to display
     let connection: SSHConnection
-    
+
     /// Whether the list is in edit mode (toggled via the toolbar three-dots menu)
     var isEditMode: Bool = false
-    
+
     /// Callback invoked when the user taps this row while in edit mode
     var onEdit: (() -> Void)? = nil
-    
+
     /// Current color scheme for adaptive styling
     @Environment(\.colorScheme) private var colorScheme
 
@@ -252,7 +253,7 @@ struct ConnectionRowView: View {
 
     /// Where private keys are stored (Keychain in the app)
     @Environment(\.keyStore) private var keyStore
-    
+
     var body: some View {
         if isEditMode {
             // In edit mode, tapping opens the edit sheet
@@ -275,18 +276,18 @@ struct ConnectionRowView: View {
                         .opacity(0)
                 )
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button(role: .destructive) {
-                    withAnimation {
-                        keyStore.deleteSSHKey(for: connection.id.uuidString)
-                        modelContext.delete(connection)
+                    Button(role: .destructive) {
+                        withAnimation {
+                            keyStore.deleteSSHKey(for: connection.id.uuidString)
+                            modelContext.delete(connection)
+                        }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
                     }
-                } label: {
-                    Label("Delete", systemImage: "trash")
                 }
-            }
         }
     }
-    
+
     /// Shared row content used in both normal and edit modes
     private func rowContent(showEditIcon: Bool) -> some View {
         HStack(spacing: 16) {
@@ -296,29 +297,29 @@ struct ConnectionRowView: View {
                 .foregroundStyle(colorScheme == .dark ? Color.white : Color.accentColor)
                 .frame(width: 60, height: 60)
                 .glassEffect(.regular.tint(.blue.opacity(colorScheme == .dark ? 1.0 : 0.4)).interactive(), in: .circle)
-            
+
             // Connection details
             VStack(alignment: .leading, spacing: 6) {
                 Text(connection.name)
                     .font(.headline)
                     .foregroundStyle(.primary)
-                
+
                 HStack(spacing: 12) {
                     Label(connection.username, systemImage: "person.fill")
                     Label(connection.serverIP, systemImage: "network")
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                
+
                 if let lastUsed = connection.lastUsedAt {
                     Text("Last used: \(lastUsed, format: .relative(presentation: .named))")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
-            
+
             Spacer()
-            
+
             // Show pencil icon in edit mode, chevron in normal mode
             if showEditIcon {
                 Image(systemName: "pencil.circle.fill")
@@ -352,7 +353,7 @@ struct ConnectionRowView: View {
         for: SSHConnection.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    
+
     // Add sample connections
     let connection1 = SSHConnection(
         name: "Production Server",
@@ -360,16 +361,16 @@ struct ConnectionRowView: View {
         username: "admin"
     )
     connection1.lastUsedAt = Date().addingTimeInterval(-3600)
-    
+
     let connection2 = SSHConnection(
         name: "Development Server",
         serverIP: "dev.example.com",
         username: "developer"
     )
-    
+
     container.mainContext.insert(connection1)
     container.mainContext.insert(connection2)
-    
+
     return ContentView()
         .modelContainer(container)
 }
@@ -378,25 +379,24 @@ struct ConnectionRowView: View {
         for: SSHConnection.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
-    
+
     let connection1 = SSHConnection(
         name: "Production Server",
         serverIP: "192.168.1.100",
         username: "admin"
     )
     connection1.lastUsedAt = Date().addingTimeInterval(-3600)
-    
+
     let connection2 = SSHConnection(
         name: "Development Server",
         serverIP: "dev.example.com",
         username: "developer"
     )
-    
+
     container.mainContext.insert(connection1)
     container.mainContext.insert(connection2)
-    
+
     return ContentView()
         .modelContainer(container)
         .preferredColorScheme(.dark)
 }
-

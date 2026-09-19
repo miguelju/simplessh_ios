@@ -6,10 +6,11 @@
 //  TestKeys). No private-key material is committed.
 //
 
-import Testing
-import Foundation
-import CryptoKit
 import Citadel
+import CryptoKit
+import Foundation
+import Testing
+
 @testable import simplessh
 
 struct PrivateKeyParsingTests {
@@ -135,8 +136,8 @@ struct PrivateKeyParsingTests {
         "",
         "not a key",
         "ssh-ed25519 " + Data([0, 0, 0, 11] + Array("ssh-ed25519".utf8)).base64EncodedString() + " user@host",
-        TestKeys.armour([0, 0, 0], label: "EC PRIVATE KEY"),        // PEM SEC1
-        TestKeys.armour([0, 0, 0], label: "PRIVATE KEY"),           // PEM PKCS#8
+        TestKeys.armour([0, 0, 0], label: "EC PRIVATE KEY"),  // PEM SEC1
+        TestKeys.armour([0, 0, 0], label: "PRIVATE KEY"),  // PEM PKCS#8
     ])
     func rejectsUnsupportedFormats(_ text: String) {
         #expect(failureReason(text)?.contains("Unsupported key format") == true)

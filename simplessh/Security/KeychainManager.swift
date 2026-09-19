@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import Security
 import LocalAuthentication
+import Security
 
 /// Manager for securely storing and retrieving SSH keys using iOS Keychain
 /// Implements biometric authentication for accessing sensitive credentials.
@@ -15,20 +15,20 @@ import LocalAuthentication
 class KeychainManager {
     /// Shared singleton instance
     static let shared = KeychainManager()
-    
+
     /// Private initializer to enforce singleton pattern
     private init() {}
-    
+
     // MARK: - Keychain Constants
-    
+
     /// Service identifier for keychain items
     private let service = "com.simplessh.sshkeys"
-    
+
     /// Access group for keychain sharing (optional)
     private let accessGroup: String? = nil
-    
+
     // MARK: - SSH Key Storage
-    
+
     /// Stores an SSH private key securely in the Keychain with biometric protection
     /// - Parameters:
     ///   - key: The SSH private key string (PEM format)
@@ -40,7 +40,7 @@ class KeychainManager {
         guard let keyData = key.data(using: .utf8) else {
             return false
         }
-        
+
         // Create access control for biometric authentication
         var accessControl: SecAccessControl?
         if requireBiometric {
@@ -48,19 +48,19 @@ class KeychainManager {
             accessControl = SecAccessControlCreateWithFlags(
                 kCFAllocatorDefault,
                 kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                [.biometryCurrentSet, .or, .devicePasscode], // Biometry or passcode
+                [.biometryCurrentSet, .or, .devicePasscode],  // Biometry or passcode
                 &error
             )
-            
+
             if let error = error {
                 print("Failed to create access control: \(error.takeRetainedValue())")
                 return false
             }
         }
-        
+
         // Delete any existing key first
         deleteSSHKey(for: identifier)
-        
+
         // Build query dictionary
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -68,24 +68,24 @@ class KeychainManager {
             kSecAttrAccount as String: identifier,
             kSecValueData as String: keyData,
             kSecAttrLabel as String: "SSH Private Key",
-            kSecAttrDescription as String: "SSH authentication key"
+            kSecAttrDescription as String: "SSH authentication key",
         ]
-        
+
         // Add access control if biometric is required
         if let accessControl = accessControl {
             query[kSecAttrAccessControl as String] = accessControl
         } else {
             query[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         }
-        
+
         // Add access group if specified
         if let accessGroup = accessGroup {
             query[kSecAttrAccessGroup as String] = accessGroup
         }
-        
+
         // Add to keychain
         let status = SecItemAdd(query as CFDictionary, nil)
-        
+
         if status == errSecSuccess {
             print("Successfully stored SSH key in Keychain")
             return true
@@ -94,7 +94,7 @@ class KeychainManager {
             return false
         }
     }
-    
+
     /// Retrieves an SSH private key from the Keychain
     /// This will trigger biometric authentication if required
     /// - Parameter identifier: Unique identifier for the key
@@ -106,23 +106,23 @@ class KeychainManager {
             kSecAttrService as String: service,
             kSecAttrAccount as String: identifier,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+            kSecMatchLimit as String: kSecMatchLimitOne,
         ]
-        
+
         // Add access group if specified
         if let accessGroup = accessGroup {
             query[kSecAttrAccessGroup as String] = accessGroup
         }
-        
+
         // Add biometric authentication prompt
         let context = LAContext()
         context.localizedReason = "Authenticate to access SSH key"
         query[kSecUseAuthenticationContext as String] = context
-        
+
         // Retrieve from keychain
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
+
         if status == errSecSuccess, let data = result as? Data {
             return String(data: data, encoding: .utf8)
         } else {
@@ -130,7 +130,7 @@ class KeychainManager {
             return nil
         }
     }
-    
+
     /// Deletes an SSH private key from the Keychain
     /// - Parameter identifier: Unique identifier for the key
     /// - Returns: True if successful or key doesn't exist, false on error
@@ -139,15 +139,15 @@ class KeychainManager {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: identifier
+            kSecAttrAccount as String: identifier,
         ]
-        
+
         if let accessGroup = accessGroup {
             query[kSecAttrAccessGroup as String] = accessGroup
         }
-        
+
         let status = SecItemDelete(query as CFDictionary)
-        
+
         // errSecItemNotFound means it didn't exist, which is fine
         if status == errSecSuccess || status == errSecItemNotFound {
             return true
@@ -156,28 +156,28 @@ class KeychainManager {
             return false
         }
     }
-    
+
     // MARK: - Biometric Authentication
-    
+
     /// Checks if biometric authentication is available on this device
     /// - Returns: True if Face ID or Touch ID is available and enrolled
     func isBiometricAuthenticationAvailable() -> Bool {
         let context = LAContext()
         var error: NSError?
-        
+
         return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
     }
-    
+
     /// Gets the type of biometric authentication available
     /// - Returns: String describing the biometric type ("Face ID", "Touch ID", or "None")
     func biometricType() -> String {
         let context = LAContext()
         var error: NSError?
-        
+
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
             return "None"
         }
-        
+
         switch context.biometryType {
         case .faceID:
             return "Face ID"
@@ -191,17 +191,17 @@ class KeychainManager {
             return "Unknown"
         }
     }
-    
+
     /// Authenticates the user with biometrics or passcode as fallback
     /// - Parameter reason: The reason to display to the user
     /// - Returns: True if authentication succeeded, false otherwise
     func authenticateUserWithPasscode(reason: String) async -> Bool {
         let context = LAContext()
         context.localizedFallbackTitle = "Use Passcode"
-        
+
         do {
             let success = try await context.evaluatePolicy(
-                .deviceOwnerAuthentication, // Allows passcode fallback
+                .deviceOwnerAuthentication,  // Allows passcode fallback
                 localizedReason: reason
             )
             return success

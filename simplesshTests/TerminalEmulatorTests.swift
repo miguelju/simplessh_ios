@@ -6,8 +6,9 @@
 //  scrollback, alternate screen and query replies.
 //
 
-import Testing
 import SwiftUI
+import Testing
+
 @testable import simplessh
 
 struct TerminalEmulatorTests {
@@ -133,35 +134,53 @@ struct TerminalEmulatorTests {
     @Test func csiCursorMovesAndClamps() {
         let t = make(cols: 80, rows: 24)
         t.feed("\(esc)[5;10H")
-        #expect(t.cursorRow == 4); #expect(t.cursorCol == 9)
-        t.feed("\(esc)[2A"); #expect(t.cursorRow == 2)
-        t.feed("\(esc)[3B"); #expect(t.cursorRow == 5)
-        t.feed("\(esc)[4C"); #expect(t.cursorCol == 13)
-        t.feed("\(esc)[2D"); #expect(t.cursorCol == 11)
-        t.feed("\(esc)[G");  #expect(t.cursorCol == 0)
-        t.feed("\(esc)[7d"); #expect(t.cursorRow == 6)
-        t.feed("\(esc)[3;3f"); #expect(t.cursorRow == 2); #expect(t.cursorCol == 2)
-        t.feed("\(esc)[H");  #expect(t.cursorRow == 0); #expect(t.cursorCol == 0)
-        t.feed("\(esc)[99;99H"); #expect(t.cursorRow == 23); #expect(t.cursorCol == 79)
-        t.feed("\(esc)[50A\(esc)[99D"); #expect(t.cursorRow == 0); #expect(t.cursorCol == 0)
+        #expect(t.cursorRow == 4)
+        #expect(t.cursorCol == 9)
+        t.feed("\(esc)[2A")
+        #expect(t.cursorRow == 2)
+        t.feed("\(esc)[3B")
+        #expect(t.cursorRow == 5)
+        t.feed("\(esc)[4C")
+        #expect(t.cursorCol == 13)
+        t.feed("\(esc)[2D")
+        #expect(t.cursorCol == 11)
+        t.feed("\(esc)[G")
+        #expect(t.cursorCol == 0)
+        t.feed("\(esc)[7d")
+        #expect(t.cursorRow == 6)
+        t.feed("\(esc)[3;3f")
+        #expect(t.cursorRow == 2)
+        #expect(t.cursorCol == 2)
+        t.feed("\(esc)[H")
+        #expect(t.cursorRow == 0)
+        #expect(t.cursorCol == 0)
+        t.feed("\(esc)[99;99H")
+        #expect(t.cursorRow == 23)
+        #expect(t.cursorCol == 79)
+        t.feed("\(esc)[50A\(esc)[99D")
+        #expect(t.cursorRow == 0)
+        #expect(t.cursorCol == 0)
     }
 
     @Test func cursorNextAndPreviousLineResetTheColumn() {
         let t = make(cols: 80, rows: 24)
         t.feed("\(esc)[5;10H\(esc)[2E")
-        #expect(t.cursorRow == 6); #expect(t.cursorCol == 0)
+        #expect(t.cursorRow == 6)
+        #expect(t.cursorCol == 0)
         t.feed("\(esc)[3;3H\(esc)[F")
-        #expect(t.cursorRow == 1); #expect(t.cursorCol == 0)
+        #expect(t.cursorRow == 1)
+        #expect(t.cursorCol == 0)
     }
 
     @Test func saveAndRestoreCursorKeepsPositionAndStyle() {
         let t = make(cols: 20, rows: 5)
-        t.feed("\(esc)[3;4H\(esc)[1m\(esc)7")     // DECSC with bold on
+        t.feed("\(esc)[3;4H\(esc)[1m\(esc)7")  // DECSC with bold on
         t.feed("\(esc)[0m\(esc)[H")
-        t.feed("\(esc)8x")                          // DECRC, then print
-        #expect(t.cursorRow == 2); #expect(t.cursorCol == 4)
+        t.feed("\(esc)8x")  // DECRC, then print
+        #expect(t.cursorRow == 2)
+        #expect(t.cursorCol == 4)
         #expect(t.cell(row: 2, col: 3).style.bold)
-        t.feed("\(esc)[s\(esc)[H\(esc)[uy")        // CSI s / CSI u pair
+        t.feed("\(esc)[s\(esc)[H\(esc)[uy")  // CSI s / CSI u pair
         #expect(t.cell(row: 2, col: 4).ch == "y")
     }
 
@@ -250,13 +269,16 @@ struct TerminalEmulatorTests {
     @Test func decstbmScrollsOnlyTheRegion() {
         let t = make(rows: 5)
         t.feed("top\(esc)[5;1Hbottom\(esc)[2;4r")
-        #expect(t.scrollTop == 1); #expect(t.scrollBottom == 3)
-        #expect(t.cursorRow == 1); #expect(t.cursorCol == 0)
+        #expect(t.scrollTop == 1)
+        #expect(t.scrollBottom == 3)
+        #expect(t.cursorRow == 1)
+        #expect(t.cursorCol == 0)
         t.feed("1\r\n2\r\n3\r\n4")
         #expect(t.screenText == ["top", "2", "3", "4", "bottom"])
         #expect(t.scrollbackLineCount == 0)
         t.feed("\(esc)[r")
-        #expect(t.scrollTop == 0); #expect(t.scrollBottom == 4)
+        #expect(t.scrollTop == 0)
+        #expect(t.scrollBottom == 4)
     }
 
     @Test func reverseIndexScrollsDownAtTheTop() {
@@ -267,10 +289,12 @@ struct TerminalEmulatorTests {
 
     @Test func indexAndNextLine() {
         let t = make(rows: 3)
-        t.feed("ab\(esc)D")           // IND: down, same column
-        #expect(t.cursorRow == 1); #expect(t.cursorCol == 2)
-        t.feed("\(esc)E")             // NEL: down, column 0
-        #expect(t.cursorRow == 2); #expect(t.cursorCol == 0)
+        t.feed("ab\(esc)D")  // IND: down, same column
+        #expect(t.cursorRow == 1)
+        #expect(t.cursorCol == 2)
+        t.feed("\(esc)E")  // NEL: down, column 0
+        #expect(t.cursorRow == 2)
+        #expect(t.cursorCol == 0)
     }
 
     // MARK: - Alternate screen
@@ -280,7 +304,8 @@ struct TerminalEmulatorTests {
         t.feed("main\(esc)[?1049h")
         #expect(t.isAlternateScreenActive)
         #expect(t.screenText == ["", "", "", ""])
-        #expect(t.cursorRow == 0); #expect(t.cursorCol == 0)
+        #expect(t.cursorRow == 0)
+        #expect(t.cursorCol == 0)
         t.feed("alt")
         #expect(t.lineText(0) == "alt")
         t.feed("\(esc)[?1049l")
@@ -302,7 +327,8 @@ struct TerminalEmulatorTests {
         #expect(!t.isAlternateScreenActive)
         #expect(t.screenText == ["", ""])
         #expect(t.scrollbackLineCount == 0)
-        #expect(t.cursorRow == 0); #expect(t.cursorCol == 0)
+        #expect(t.cursorRow == 0)
+        #expect(t.cursorCol == 0)
         t.feed("y")
         #expect(!t.cell(row: 0, col: 0).style.bold)
     }
@@ -339,7 +365,7 @@ struct TerminalEmulatorTests {
         let t = make()
         t.feed("\(esc)]11;?\u{07}")
         #expect(t.drainReply() == "\(esc)]11;rgb:0000/0000/0000\u{07}")
-        t.feed("\(esc)]10;?\(esc)\\")                     // ST-terminated
+        t.feed("\(esc)]10;?\(esc)\\")  // ST-terminated
         #expect(t.drainReply() == "\(esc)]10;rgb:ffff/ffff/ffff\u{07}")
         t.feed("\(esc)]0;window title\u{07}x")
         #expect(t.lineText(0) == "x")
@@ -359,7 +385,8 @@ struct TerminalEmulatorTests {
         t.feed("ab")
         t.feed("\(esc)[")
         t.feed("1;1H")
-        #expect(t.cursorRow == 0); #expect(t.cursorCol == 0)
+        #expect(t.cursorRow == 0)
+        #expect(t.cursorCol == 0)
         t.feed("\(esc)]0;ti")
         t.feed("tle\u{07}Z")
         #expect(t.lineText(0) == "Zb")
@@ -382,8 +409,9 @@ struct TerminalEmulatorTests {
     @Test func renderJoinsScrollbackAndScreenAndDropsTrailingBlanks() {
         let t = make(rows: 2)
         t.feed("1\r\n2\r\n3")
-        let rendered = t.render(defaultForeground: .white, defaultBackground: .black,
-                                defaultFont: .system(size: 12), boldFont: .system(size: 12).bold())
+        let rendered = t.render(
+            defaultForeground: .white, defaultBackground: .black,
+            defaultFont: .system(size: 12), boldFont: .system(size: 12).bold())
         #expect(String(rendered.characters) == "1\n2\n3")
     }
 
@@ -392,8 +420,9 @@ struct TerminalEmulatorTests {
         let plain = Font.system(size: 12)
         let bold = Font.system(size: 12).bold()
         t.feed("a\(esc)[1mb\(esc)[0mc")
-        let rendered = t.render(defaultForeground: .white, defaultBackground: .black,
-                                defaultFont: plain, boldFont: bold)
+        let rendered = t.render(
+            defaultForeground: .white, defaultBackground: .black,
+            defaultFont: plain, boldFont: bold)
         let fonts = rendered.runs.map { $0.font }
         #expect(fonts == [plain, bold, plain])
     }
@@ -401,8 +430,9 @@ struct TerminalEmulatorTests {
     @Test func renderShowsOnlyTheAlternateScreenWhileActive() {
         let t = make(rows: 2)
         t.feed("1\r\n2\r\n3\(esc)[?1049halt")
-        let rendered = t.render(defaultForeground: .white, defaultBackground: .black,
-                                defaultFont: .system(size: 12), boldFont: .system(size: 12).bold())
+        let rendered = t.render(
+            defaultForeground: .white, defaultBackground: .black,
+            defaultFont: .system(size: 12), boldFont: .system(size: 12).bold())
         #expect(String(rendered.characters) == "alt")
     }
 }

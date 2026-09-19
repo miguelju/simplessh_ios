@@ -5,8 +5,8 @@
 //  Created by Miguel Jackson on 3/21/26.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 import UIKit
 
 /// App-wide appearance mode (light, dark, or follow system)
@@ -22,8 +22,8 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     var colorScheme: ColorScheme? {
         switch self {
         case .system: return nil
-        case .light:  return .light
-        case .dark:   return .dark
+        case .light: return .light
+        case .dark: return .dark
         }
     }
 }
@@ -121,7 +121,7 @@ enum TerminalTheme: String, CaseIterable, Identifiable {
     var terminalFont: TerminalFont {
         switch self {
         case .custom: return .system
-        default:      return .meslo
+        default: return .meslo
         }
     }
 
@@ -129,39 +129,39 @@ enum TerminalTheme: String, CaseIterable, Identifiable {
     var fontSize: CGFloat {
         switch self {
         case .classicGreen: return 14
-        case .amber:        return 14
-        case .cyan:         return 14
-        case .white:        return 14
-        case .solarized:    return 14
-        case .dracula:      return 14
-        case .ohMyZsh:      return 13
-        case .custom:       return 14
+        case .amber: return 14
+        case .cyan: return 14
+        case .white: return 14
+        case .solarized: return 14
+        case .dracula: return 14
+        case .ohMyZsh: return 13
+        case .custom: return 14
         }
     }
 
     var foreground: Color {
         switch self {
         case .classicGreen: return Color(red: 0.2, green: 1.0, blue: 0.2)
-        case .amber:        return Color(red: 1.0, green: 0.75, blue: 0.0)
-        case .cyan:         return Color(red: 0.0, green: 0.9, blue: 0.9)
-        case .white:        return Color(red: 0.9, green: 0.9, blue: 0.9)
-        case .solarized:    return Color(red: 0.51, green: 0.58, blue: 0.59)
-        case .dracula:      return Color(red: 0.97, green: 0.97, blue: 0.95)
-        case .ohMyZsh:      return Color(red: 0.83, green: 0.83, blue: 0.83)
-        case .custom:       return .green
+        case .amber: return Color(red: 1.0, green: 0.75, blue: 0.0)
+        case .cyan: return Color(red: 0.0, green: 0.9, blue: 0.9)
+        case .white: return Color(red: 0.9, green: 0.9, blue: 0.9)
+        case .solarized: return Color(red: 0.51, green: 0.58, blue: 0.59)
+        case .dracula: return Color(red: 0.97, green: 0.97, blue: 0.95)
+        case .ohMyZsh: return Color(red: 0.83, green: 0.83, blue: 0.83)
+        case .custom: return .green
         }
     }
 
     var background: Color {
         switch self {
         case .classicGreen: return .black
-        case .amber:        return Color(red: 0.05, green: 0.05, blue: 0.05)
-        case .cyan:         return Color(red: 0.0, green: 0.05, blue: 0.1)
-        case .white:        return Color(red: 0.1, green: 0.1, blue: 0.1)
-        case .solarized:    return Color(red: 0.0, green: 0.17, blue: 0.21)
-        case .dracula:      return Color(red: 0.16, green: 0.16, blue: 0.21)
-        case .ohMyZsh:      return Color(red: 0.12, green: 0.12, blue: 0.12)
-        case .custom:       return .black
+        case .amber: return Color(red: 0.05, green: 0.05, blue: 0.05)
+        case .cyan: return Color(red: 0.0, green: 0.05, blue: 0.1)
+        case .white: return Color(red: 0.1, green: 0.1, blue: 0.1)
+        case .solarized: return Color(red: 0.0, green: 0.17, blue: 0.21)
+        case .dracula: return Color(red: 0.16, green: 0.16, blue: 0.21)
+        case .ohMyZsh: return Color(red: 0.12, green: 0.12, blue: 0.12)
+        case .custom: return .black
         }
     }
 }
@@ -250,7 +250,8 @@ class TerminalSettingsStore: ObservableObject {
 
     /// Snapshot of the active colours and fonts for the terminal renderer.
     var renderTheme: TerminalRenderTheme {
-        TerminalRenderTheme(foreground: foregroundColor, background: backgroundColor,
-                            font: font, boldFont: boldFont)
+        TerminalRenderTheme(
+            foreground: foregroundColor, background: backgroundColor,
+            font: font, boldFont: boldFont)
     }
 }
