@@ -6,6 +6,11 @@ item ids (A1, B3, …) refer to [`ROADMAP.md`](ROADMAP.md).
 ## [Unreleased]
 
 ### Added
+- B5 — `.swift-format` configuration (4-space indentation, 120-column lines,
+  swift-format defaults otherwise) and a CI `format` job that runs
+  `swift format lint --strict` from the Xcode toolchain, so an unformatted
+  file turns the check red. One-time reformat of every Swift source in its
+  own commit; the app struct is now `SimplesshApp` (file name unchanged).
 - B4 — Repository hardening: rulesets requiring verified signatures on
   `main` and `v*` tags (no bypass) plus PR / linear-history / no-force-push
   protection (Admin bypass); `hooks/pre-push` private-data gate with a

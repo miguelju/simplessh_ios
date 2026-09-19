@@ -152,7 +152,7 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   *Done when:* `gh api repos/miguelju/simplessh_ios/rulesets` lists four;
   an unsigned test push to `main` is rejected; the hook blocks a PEM block.
 
-- [ ] **B5 · Formatting** (S)
+- [~] **B5 · Formatting** (S)
   Check in a `.swift-format` config and run `swift format lint` in CI (uses
   the Xcode toolchain; no third-party tool). One-time reformat as its own
   commit so blame stays useful.

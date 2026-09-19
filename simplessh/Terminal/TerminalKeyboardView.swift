@@ -5,8 +5,8 @@
 //  Created by Miguel Jackson on 3/22/26.
 //
 
-import UIKit
 import SwiftUI
+import UIKit
 
 /// Hidden UITextField subclass that captures keyboard input for terminal use.
 /// Uses a UITextField (rather than bare UIKeyInput) because UITextField properly
@@ -67,9 +67,10 @@ final class TerminalTextField: UITextField {
 
             // Ctrl+letter from hardware keyboard
             if key.modifierFlags.contains(.control),
-               let char = key.characters.uppercased().first,
-               let ascii = char.asciiValue,
-               ascii >= 65, ascii <= 90 {
+                let char = key.characters.uppercased().first,
+                let ascii = char.asciiValue,
+                ascii >= 65, ascii <= 90
+            {
                 onInput?(Data([UInt8(ascii - 64)]))
                 handled = true
                 continue
@@ -88,31 +89,31 @@ final class TerminalTextField: UITextField {
     /// Maps hardware key codes to ANSI/VT100 escape sequences
     private func ansiSequence(for keyCode: UIKeyboardHIDUsage) -> Data? {
         switch keyCode {
-        case .keyboardUpArrow:           return Data("\u{1B}[A".utf8)
-        case .keyboardDownArrow:         return Data("\u{1B}[B".utf8)
-        case .keyboardRightArrow:        return Data("\u{1B}[C".utf8)
-        case .keyboardLeftArrow:         return Data("\u{1B}[D".utf8)
-        case .keyboardEscape:            return Data([0x1B])
-        case .keyboardTab:               return Data([0x09])
+        case .keyboardUpArrow: return Data("\u{1B}[A".utf8)
+        case .keyboardDownArrow: return Data("\u{1B}[B".utf8)
+        case .keyboardRightArrow: return Data("\u{1B}[C".utf8)
+        case .keyboardLeftArrow: return Data("\u{1B}[D".utf8)
+        case .keyboardEscape: return Data([0x1B])
+        case .keyboardTab: return Data([0x09])
         case .keyboardDeleteOrBackspace: return Data([0x7F])
-        case .keyboardHome:              return Data("\u{1B}[H".utf8)
-        case .keyboardEnd:               return Data("\u{1B}[F".utf8)
-        case .keyboardPageUp:            return Data("\u{1B}[5~".utf8)
-        case .keyboardPageDown:          return Data("\u{1B}[6~".utf8)
-        case .keyboardDeleteForward:     return Data("\u{1B}[3~".utf8)
-        case .keyboardF1:               return Data("\u{1B}OP".utf8)
-        case .keyboardF2:               return Data("\u{1B}OQ".utf8)
-        case .keyboardF3:               return Data("\u{1B}OR".utf8)
-        case .keyboardF4:               return Data("\u{1B}OS".utf8)
-        case .keyboardF5:               return Data("\u{1B}[15~".utf8)
-        case .keyboardF6:               return Data("\u{1B}[17~".utf8)
-        case .keyboardF7:               return Data("\u{1B}[18~".utf8)
-        case .keyboardF8:               return Data("\u{1B}[19~".utf8)
-        case .keyboardF9:               return Data("\u{1B}[20~".utf8)
-        case .keyboardF10:              return Data("\u{1B}[21~".utf8)
-        case .keyboardF11:              return Data("\u{1B}[23~".utf8)
-        case .keyboardF12:              return Data("\u{1B}[24~".utf8)
-        default:                         return nil
+        case .keyboardHome: return Data("\u{1B}[H".utf8)
+        case .keyboardEnd: return Data("\u{1B}[F".utf8)
+        case .keyboardPageUp: return Data("\u{1B}[5~".utf8)
+        case .keyboardPageDown: return Data("\u{1B}[6~".utf8)
+        case .keyboardDeleteForward: return Data("\u{1B}[3~".utf8)
+        case .keyboardF1: return Data("\u{1B}OP".utf8)
+        case .keyboardF2: return Data("\u{1B}OQ".utf8)
+        case .keyboardF3: return Data("\u{1B}OR".utf8)
+        case .keyboardF4: return Data("\u{1B}OS".utf8)
+        case .keyboardF5: return Data("\u{1B}[15~".utf8)
+        case .keyboardF6: return Data("\u{1B}[17~".utf8)
+        case .keyboardF7: return Data("\u{1B}[18~".utf8)
+        case .keyboardF8: return Data("\u{1B}[19~".utf8)
+        case .keyboardF9: return Data("\u{1B}[20~".utf8)
+        case .keyboardF10: return Data("\u{1B}[21~".utf8)
+        case .keyboardF11: return Data("\u{1B}[23~".utf8)
+        case .keyboardF12: return Data("\u{1B}[24~".utf8)
+        default: return nil
         }
     }
 
@@ -129,7 +130,7 @@ final class TerminalTextField: UITextField {
         let keys: [(String, Data?)] = [
             ("esc", Data([0x1B])),
             ("tab", Data([0x09])),
-            ("ctrl", nil), // special toggle
+            ("ctrl", nil),  // special toggle
             ("↑", Data("\u{1B}[A".utf8)),
             ("↓", Data("\u{1B}[B".utf8)),
             ("←", Data("\u{1B}[D".utf8)),
@@ -170,16 +171,16 @@ final class TerminalTextField: UITextField {
 
     private var accessoryKeyData: [Int: Data] {
         [
-            0: Data([0x1B]),           // esc
-            1: Data([0x09]),           // tab
+            0: Data([0x1B]),  // esc
+            1: Data([0x09]),  // tab
             3: Data("\u{1B}[A".utf8),  // ↑
             4: Data("\u{1B}[B".utf8),  // ↓
             5: Data("\u{1B}[D".utf8),  // ←
             6: Data("\u{1B}[C".utf8),  // →
-            7: Data("|".utf8),         // |
-            8: Data("~".utf8),         // ~
-            9: Data("-".utf8),         // -
-            10: Data("/".utf8),        // /
+            7: Data("|".utf8),  // |
+            8: Data("~".utf8),  // ~
+            9: Data("-".utf8),  // -
+            10: Data("/".utf8),  // /
         ]
     }
 
@@ -240,9 +241,11 @@ struct TerminalKeyboardCapture: UIViewRepresentable {
 
         /// Intercepts every text change before it happens.
         /// Returns false to prevent text from accumulating — we handle it ourselves.
-        func textField(_ textField: UITextField,
-                       shouldChangeCharactersIn range: NSRange,
-                       replacementString string: String) -> Bool {
+        func textField(
+            _ textField: UITextField,
+            shouldChangeCharactersIn range: NSRange,
+            replacementString string: String
+        ) -> Bool {
 
             let field = terminalField
 
@@ -255,8 +258,9 @@ struct TerminalKeyboardCapture: UIViewRepresentable {
                     field.ctrlActive = false
                     field.ctrlButton?.setTitleColor(.white, for: .normal)
                     if let char = string.uppercased().first,
-                       let ascii = char.asciiValue,
-                       ascii >= 65, ascii <= 90 {
+                        let ascii = char.asciiValue,
+                        ascii >= 65, ascii <= 90
+                    {
                         onInput(Data([UInt8(ascii - 64)]))
                         resetField(textField)
                         return false

@@ -16,28 +16,28 @@ final class SSHConnection {
     /// Unique identifier for the connection
     /// Also used as the Keychain identifier for the SSH key
     var id: UUID
-    
+
     /// Display name for this SSH connection
     var name: String
-    
+
     /// IP address or hostname of the SSH server
     var serverIP: String
-    
+
     /// Username for SSH authentication
     var username: String
-    
+
     /// Port number for SSH connection (default: 22)
     var port: Int
-    
+
     /// Timestamp when this connection was created
     var createdAt: Date
-    
+
     /// Timestamp when this connection was last used
     var lastUsedAt: Date?
-    
+
     /// Whether biometric authentication is required to use this connection
     var requiresBiometric: Bool
-    
+
     /// Initialize a new SSH connection
     /// - Parameters:
     ///   - name: Display name for the connection

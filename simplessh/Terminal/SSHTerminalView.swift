@@ -5,37 +5,37 @@
 //  Created by Miguel Jackson on 3/18/26.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 /// Terminal view with real SSH connection via Citadel (SwiftNIO SSH)
 /// Includes biometric authentication, error handling, and full terminal emulation
 struct SSHTerminalView: View {
     /// The SSH connection to use
     let connection: SSHConnection
-    
+
     /// SSH manager handling the connection. Seeded with the current theme;
     /// kept in sync by the `renderTheme` onChange below.
     @StateObject private var sshManager = SSHManager(renderTheme: TerminalSettingsStore.shared.renderTheme)
 
     /// Where the host's private key is read from (Keychain in the app)
     @Environment(\.keyStore) private var keyStore
-    
+
     /// Whether authentication is in progress
     @State private var isAuthenticating: Bool = false
-    
+
     /// Whether to show error alert
     @State private var showError: Bool = false
-    
+
     /// Error message to display
     @State private var errorMessage: String = ""
-    
+
     /// Access to model context for updating last used date
     @Environment(\.modelContext) private var modelContext
-    
+
     /// Environment variable to dismiss this view
     @Environment(\.dismiss) private var dismiss
-    
+
     /// Whether the terminal was previously connected (for exit detection)
     @State private var wasConnected: Bool = false
 
@@ -44,7 +44,7 @@ struct SSHTerminalView: View {
 
     /// Whether settings sheet is presented
     @State private var showSettings: Bool = false
-    
+
     var body: some View {
         ZStack {
             // Terminal output area (full screen)
@@ -91,7 +91,7 @@ struct SSHTerminalView: View {
             }
         }
         .alert("SSH Error", isPresented: $showError) {
-            Button("OK", role: .cancel) { }
+            Button("OK", role: .cancel) {}
             if !sshManager.isConnected {
                 Button("Retry") {
                     Task {
@@ -103,9 +103,9 @@ struct SSHTerminalView: View {
             Text(errorMessage)
         }
     }
-    
+
     // MARK: - View Components
-    
+
     /// Terminal output display area with ANSI support
     private var terminalOutputSection: some View {
         ScrollViewReader { proxy in
@@ -135,7 +135,7 @@ struct SSHTerminalView: View {
             .onChange(of: terminalSettings.renderTheme) { _, theme in sshManager.renderTheme = theme }
         }
     }
-    
+
     /// Toolbar content
     private var toolbarContent: some ToolbarContent {
         Group {
@@ -162,7 +162,7 @@ struct SSHTerminalView: View {
             }
         }
     }
-    
+
     /// Connection status indicator
     private var connectionStatusView: some View {
         HStack(spacing: 6) {
@@ -175,29 +175,32 @@ struct SSHTerminalView: View {
                 Circle()
                     .fill(sshManager.isConnected ? Color.green : Color.red)
                     .frame(width: 8, height: 8)
-                
-                Text(sshManager.statusMessage.isEmpty ? (sshManager.isConnected ? "Connected" : "Disconnected") : sshManager.statusMessage)
-                    .font(.caption)
+
+                Text(
+                    sshManager.statusMessage.isEmpty
+                        ? (sshManager.isConnected ? "Connected" : "Disconnected") : sshManager.statusMessage
+                )
+                .font(.caption)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .glassEffect(.regular.tint(sshManager.isConnected ? .green : .red).interactive(), in: .capsule)
     }
-    
+
     // MARK: - SSH Actions
 
     /// Connects to the SSH server with biometric authentication
     private func connectToServer() async {
         isAuthenticating = true
-        
+
         do {
             // Authenticate with biometrics if required
             if connection.requiresBiometric {
                 let authenticated = await KeychainManager.shared.authenticateUserWithPasscode(
                     reason: "Authenticate to access SSH key for \(connection.name)"
                 )
-                
+
                 guard authenticated else {
                     errorMessage = "Authentication required to access SSH key"
                     showError = true
@@ -205,14 +208,14 @@ struct SSHTerminalView: View {
                     return
                 }
             }
-            
+
             // Connect to SSH server
             try await sshManager.connect(to: connection, keyStore: keyStore)
-            
+
             // Update last used date
             connection.lastUsedAt = Date()
             try? modelContext.save()
-            
+
         } catch let error as SSHManager.SSHError {
             errorMessage = error.localizedDescription
             showError = true
@@ -220,7 +223,7 @@ struct SSHTerminalView: View {
             errorMessage = error.localizedDescription
             showError = true
         }
-        
+
         isAuthenticating = false
     }
 }

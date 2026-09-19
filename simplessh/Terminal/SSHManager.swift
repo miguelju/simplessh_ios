@@ -5,14 +5,14 @@
 //  Created by Miguel Jackson on 3/18/26.
 //
 
-import Foundation
-import SwiftUI
-import Combine
-import Citadel
-import NIOSSH
-import NIOCore
-import Crypto
 import CCryptoBoringSSL
+import Citadel
+import Combine
+import Crypto
+import Foundation
+import NIOCore
+import NIOSSH
+import SwiftUI
 
 /// Manager class for handling SSH connections with Citadel (SwiftNIO SSH)
 /// Provides thread-safe SSH session management with real-time output streaming
@@ -303,7 +303,7 @@ class SSHManager: ObservableObject {
     private static func parsePrivateKey(from keyString: String, username: String) throws -> SSHAuthenticationMethod {
         switch try parsePrivateKey(keyString) {
         case .ed25519(let key): return .ed25519(username: username, privateKey: key)
-        case .rsa(let key):     return .rsa(username: username, privateKey: key)
+        case .rsa(let key): return .rsa(username: username, privateKey: key)
         }
     }
 
@@ -356,20 +356,20 @@ class SSHManager: ObservableObject {
             throw SSHError.keyParsingFailed("Invalid OpenSSH key magic")
         }
         var offset = magic.count
-        _ = try readOpenSSHString(bytes: bytes, offset: &offset)   // ciphername
-        _ = try readOpenSSHString(bytes: bytes, offset: &offset)   // kdfname
-        _ = try readOpenSSHString(bytes: bytes, offset: &offset)   // kdfoptions
+        _ = try readOpenSSHString(bytes: bytes, offset: &offset)  // ciphername
+        _ = try readOpenSSHString(bytes: bytes, offset: &offset)  // kdfname
+        _ = try readOpenSSHString(bytes: bytes, offset: &offset)  // kdfoptions
         guard offset + 4 <= bytes.count else {
             throw SSHError.keyParsingFailed("Truncated key data")
         }
-        offset += 4                                                 // number of keys
+        offset += 4  // number of keys
         let publicBlob = try readOpenSSHString(bytes: bytes, offset: &offset)
         var blobOffset = 0
         let name = try readOpenSSHString(bytes: publicBlob, offset: &blobOffset)
         switch String(decoding: name, as: UTF8.self) {
         case "ssh-ed25519": return .ed25519
-        case "ssh-rsa":     return .rsa
-        case let other:     return .unknown(other)
+        case "ssh-rsa": return .rsa
+        case let other: return .unknown(other)
         }
     }
 
@@ -383,7 +383,8 @@ class SSHManager: ObservableObject {
         let magic = "openssh-key-v1\0"
         let magicBytes = Array(magic.utf8)
         guard bytes.count > magicBytes.count,
-              Array(bytes[0..<magicBytes.count]) == magicBytes else {
+            Array(bytes[0..<magicBytes.count]) == magicBytes
+        else {
             throw SSHError.keyParsingFailed("Invalid OpenSSH key magic")
         }
         offset = magicBytes.count
@@ -399,7 +400,7 @@ class SSHManager: ObservableObject {
         guard offset + 4 <= bytes.count else {
             throw SSHError.keyParsingFailed("Truncated key data")
         }
-        offset += 4 // skip number of keys
+        offset += 4  // skip number of keys
 
         // Skip public key blob (string)
         _ = try readOpenSSHString(bytes: bytes, offset: &offset)
@@ -415,7 +416,8 @@ class SSHManager: ObservableObject {
         let check1 = readUInt32(privateSection, offset: &privOffset)
         let check2 = readUInt32(privateSection, offset: &privOffset)
         guard check1 == check2 else {
-            throw SSHError.keyParsingFailed("Check integers mismatch — key may be encrypted. Encrypted keys are not supported.")
+            throw SSHError.keyParsingFailed(
+                "Check integers mismatch — key may be encrypted. Encrypted keys are not supported.")
         }
 
         // Key type string (e.g. "ssh-ed25519")
@@ -453,7 +455,8 @@ class SSHManager: ObservableObject {
 
     /// Reads a big-endian uint32
     private static func readUInt32(_ bytes: [UInt8], offset: inout Int) -> UInt32 {
-        let value = UInt32(bytes[offset]) << 24
+        let value =
+            UInt32(bytes[offset]) << 24
             | UInt32(bytes[offset + 1]) << 16
             | UInt32(bytes[offset + 2]) << 8
             | UInt32(bytes[offset + 3])

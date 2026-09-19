@@ -1,10 +1,12 @@
-# Build and test on every pull request and every push to main.
+# Build, test and lint formatting on every pull request and every push to main.
 #
-# Runs the same command as README.md / CLAUDE.md on GitHub's hosted macos-26
+# The test job runs the same command as README.md / CLAUDE.md on GitHub's hosted macos-26
 # image, whose default Xcode (26.6, build 17F113) matches the local toolchain.
 # Docs-only changes skip it. The workflow file is in its own trigger paths, so
 # a typo here fires the run that would catch it. Third-party actions are pinned
-# to commit SHAs (the comment is the tag they were resolved from).
+# to commit SHAs (the comment is the tag they were resolved from). The format
+# job runs the toolchain's swift-format against .swift-format and fails on any
+# file the formatter would change (fix: see README.md).
 
 name: CI
 
@@ -39,6 +41,20 @@ env:
   DESTINATION: platform=iOS Simulator,name=iPhone 17
 
 jobs:
+  format:
+    name: Format (swift format lint)
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint
+        run: |
+          xcrun swift format --version
+          xcrun swift format lint --strict --recursive --parallel simplessh simplesshTests
+
   test:
     name: Build and test (iPhone 17 simulator)
     runs-on: macos-26

@@ -10,8 +10,8 @@
 //  tests never need one.
 //
 
-import Foundation
 import CryptoKit
+import Foundation
 import Security
 
 enum TestKeys {
@@ -53,7 +53,8 @@ enum TestKeys {
 
     /// Decodes the base64 body of an armoured key back to bytes.
     static func payload(of armoured: String) -> [UInt8] {
-        let body = armoured
+        let body =
+            armoured
             .components(separatedBy: .newlines)
             .filter { !$0.hasPrefix("-----") && !$0.isEmpty }
             .joined()
@@ -65,13 +66,18 @@ enum TestKeys {
     /// Wraps a public blob and the private-section fields in an unencrypted
     /// openssh-key-v1 container: matching check integers, comment, and 1..n
     /// padding to the 8-byte block size of cipher "none".
-    static func opensshContainer(publicBlob: [UInt8],
-                                 privateFields: [UInt8],
-                                 comment: String = "simplessh-test") -> [UInt8] {
-        let check = uint32(0x5F5F5F5F)
+    static func opensshContainer(
+        publicBlob: [UInt8],
+        privateFields: [UInt8],
+        comment: String = "simplessh-test"
+    ) -> [UInt8] {
+        let check = uint32(0x5F5F_5F5F)
         var privateSection = check + check + privateFields + sshString(comment)
         var pad: UInt8 = 1
-        while privateSection.count % 8 != 0 { privateSection.append(pad); pad += 1 }
+        while privateSection.count % 8 != 0 {
+            privateSection.append(pad)
+            pad += 1
+        }
         return Array("openssh-key-v1\0".utf8)
             + sshString("none") + sshString("none") + sshString([])
             + uint32(1)
@@ -80,9 +86,11 @@ enum TestKeys {
     }
 
     /// An unencrypted OpenSSH Ed25519 private key for `key`.
-    static func opensshEd25519(_ key: Curve25519.Signing.PrivateKey,
-                               comment: String = "simplessh-test",
-                               lineEnding: String = "\n") -> String {
+    static func opensshEd25519(
+        _ key: Curve25519.Signing.PrivateKey,
+        comment: String = "simplessh-test",
+        lineEnding: String = "\n"
+    ) -> String {
         let pub = Array(key.publicKey.rawRepresentation)
         let seed = Array(key.rawRepresentation)
         let publicBlob = sshString("ssh-ed25519") + sshString(pub)
@@ -94,7 +102,8 @@ enum TestKeys {
     /// An unencrypted OpenSSH RSA private key for `rsa`.
     static func opensshRSA(_ rsa: RSAComponents, comment: String = "simplessh-test") -> String {
         let publicBlob = sshString("ssh-rsa") + mpint(rsa.e) + mpint(rsa.n)
-        let fields = sshString("ssh-rsa")
+        let fields =
+            sshString("ssh-rsa")
             + mpint(rsa.n) + mpint(rsa.e) + mpint(rsa.d)
             + mpint(rsa.qinv) + mpint(rsa.p) + mpint(rsa.q)
         let container = opensshContainer(publicBlob: publicBlob, privateFields: fields, comment: comment)
@@ -124,8 +133,9 @@ enum TestKeys {
         let publicBlob = sshString("ssh-ed25519") + sshString(Array(key.publicKey.rawRepresentation))
         let kdfOptions = sshString([UInt8](repeating: 0xA5, count: 16)) + uint32(16)
         var privateSection = [UInt8](repeating: 0x42, count: 160)
-        privateSection.replaceSubrange(0..<8, with: [1, 2, 3, 4, 5, 6, 7, 8])   // check0 != check1
-        let container = Array("openssh-key-v1\0".utf8)
+        privateSection.replaceSubrange(0..<8, with: [1, 2, 3, 4, 5, 6, 7, 8])  // check0 != check1
+        let container =
+            Array("openssh-key-v1\0".utf8)
             + sshString("aes256-ctr") + sshString("bcrypt") + sshString(kdfOptions)
             + uint32(1)
             + sshString(publicBlob)
@@ -143,7 +153,10 @@ enum TestKeys {
         let dp: [UInt8], dq: [UInt8], qinv: [UInt8]
     }
 
-    enum GenerationFailure: Error { case keygen(String), export, der }
+    enum GenerationFailure: Error {
+        case keygen(String)
+        case export, der
+    }
 
     /// Generates an RSA key with the Security framework and reads its PKCS#1
     /// components with an independent DER walker (not the app's).
@@ -164,11 +177,12 @@ enum TestKeys {
         var reader = DERReader(der)
         try reader.enterSequence()
         var ints: [[UInt8]] = []
-        for _ in 0..<9 { ints.append(try reader.integer()) }   // version, n, e, d, p, q, dp, dq, qinv
-        return RSAComponents(der: der,
-                             n: ints[1], e: ints[2], d: ints[3],
-                             p: ints[4], q: ints[5],
-                             dp: ints[6], dq: ints[7], qinv: ints[8])
+        for _ in 0..<9 { ints.append(try reader.integer()) }  // version, n, e, d, p, q, dp, dq, qinv
+        return RSAComponents(
+            der: der,
+            n: ints[1], e: ints[2], d: ints[3],
+            p: ints[4], q: ints[5],
+            dp: ints[6], dq: ints[7], qinv: ints[8])
     }
 
     private struct DERReader {

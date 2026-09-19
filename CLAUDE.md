@@ -24,6 +24,9 @@ xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
 # Tests (Swift Testing; simplesshTests/)
 xcodebuild -project simplessh.xcodeproj -scheme simplessh -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 17' test
+
+# Formatting (CI lints with the same config; run this before pushing)
+xcrun swift format format --in-place --recursive simplessh simplesshTests
 ```
 
 Packages are pinned by the committed `Package.resolved`. CI
