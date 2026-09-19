@@ -152,11 +152,20 @@ Tests and CI so that phases C–E can be reviewed on behaviour, not on faith.
   *Done when:* `gh api repos/miguelju/simplessh_ios/rulesets` lists four;
   an unsigned test push to `main` is rejected; the hook blocks a PEM block.
 
-- [~] **B5 · Formatting** (S)
+- [x] **B5 · Formatting** (S)
   Check in a `.swift-format` config and run `swift format lint` in CI (uses
   the Xcode toolchain; no third-party tool). One-time reformat as its own
   commit so blame stays useful.
   *Done when:* CI fails on an unformatted file.
+  *Done 2026-09-19 (PR #10):* `.swift-format` (4-space indentation, 120
+  columns, defaults otherwise) and a `format` job in `.github/workflows/ci.yml`
+  running `xcrun swift format lint --strict`. Proven the B3 way: the PR's first
+  commit left the sources unformatted and the job went red (726 findings on
+  Xcode 26.6's swift-format); the second commit was the mechanical reformat
+  (`3b1839c`, listed in `.git-blame-ignore-revs`) and the job went green, with
+  build and the 60 tests green alongside. Two lint-only findings fixed by
+  hand: the app struct is `SimplesshApp`; `TestKeys.GenerationFailure` has
+  one case per line.
 
 ## Phase C — Security and correctness
 

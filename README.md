@@ -113,6 +113,10 @@ fails on any file the formatter would change. Format before pushing with:
 xcrun swift format format --in-place --recursive simplessh simplesshTests
 ```
 
+The one-time reformat commit is listed in `.git-blame-ignore-revs`; GitHub's
+blame skips it automatically, and locally
+`git config blame.ignoreRevsFile .git-blame-ignore-revs` does the same.
+
 ### Common issues
 
 | Symptom | Cause / fix |

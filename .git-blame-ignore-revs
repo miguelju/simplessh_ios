@@ -1,0 +1,6 @@
+# Commits that `git blame` should skip (mechanical, no code change).
+# Opt in locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub's blame view honours this file automatically.
+
+# B5: one-time reformat with swift-format
+3b1839cfe023487eb82baf180f983c8a29f5bc26
