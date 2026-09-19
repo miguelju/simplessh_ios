@@ -143,7 +143,10 @@ enum TestKeys {
         let dp: [UInt8], dq: [UInt8], qinv: [UInt8]
     }
 
-    enum GenerationFailure: Error { case keygen(String), export, der }
+    enum GenerationFailure: Error {
+        case keygen(String)
+        case export, der
+    }
 
     /// Generates an RSA key with the Security framework and reads its PKCS#1
     /// components with an independent DER walker (not the app's).

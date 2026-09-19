@@ -68,7 +68,7 @@ header; Citadel is pure Swift.
 
 ### Startup
 
-`simplesshApp` creates a `ModelContainer` for `SSHConnection`, calls
+`SimplesshApp` (in `simplesshApp.swift`) creates a `ModelContainer` for `SSHConnection`, calls
 `FontRegistrar.registerBundledFonts()` (runtime Core Text registration, because
 the generated Info.plist makes `UIAppFonts` awkward), observes
 `TerminalSettingsStore.shared`, and shows `ContentView` with
@@ -290,3 +290,8 @@ SwiftNIO event loops. Keychain calls are synchronous on the main actor today
   `main`; Admin bypass).
 - `hooks/pre-push` is the private-data gate; each clone opts in with
   `git config core.hooksPath hooks`.
+- Formatting: `.swift-format` at the repository root (4-space indentation,
+  120-column lines, swift-format defaults otherwise). CI's `format` job runs
+  `xcrun swift format lint --strict` over `simplessh/` and `simplesshTests/`
+  with the toolchain's swift-format, so an unformatted file fails the check;
+  `README.md` has the command that fixes it.

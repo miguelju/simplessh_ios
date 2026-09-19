@@ -105,6 +105,14 @@ Continuous integration runs that same test command on GitHub's hosted
 (`.github/workflows/ci.yml`). Changes that touch only Markdown, the licence or
 screenshots skip it.
 
+Formatting is checked there too: a second job runs `swift format lint` from the
+Xcode toolchain against `.swift-format` (4-space indentation, 120 columns) and
+fails on any file the formatter would change. Format before pushing with:
+
+```bash
+xcrun swift format format --in-place --recursive simplessh simplesshTests
+```
+
 ### Common issues
 
 | Symptom | Cause / fix |
