@@ -17,3 +17,10 @@ Packages/
 # App-specific secrets / credentials
 *.env
 credentials.json
+
+# Claude Code per-user state. settings.local.json stores every approved command
+# verbatim (secrets included) and must never be committed. Repo-level on purpose:
+# a rule only in ~/.config/git/ignore does not exist on a fresh machine.
+**/.claude/settings.local.json
+**/.claude/*.lock
+**/.claude/worktrees/
